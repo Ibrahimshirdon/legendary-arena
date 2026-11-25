@@ -119,7 +119,7 @@ usersRouter.post('/', async (req, res) => {
       phone: phone || null,
       avatarUrl: avatarUrl ?? '',
       role: isFirstUser ? 'admin' : 'member',
-      status: isFirstUser ? 'approved' : 'pending',
+      status: 'unverified',
       online: true,
       lastSeen: Date.now(),
       createdAt: Date.now(),
@@ -140,6 +140,28 @@ usersRouter.get('/me', attachProfile, async (req, res) => {
 usersRouter.get('/', async (_req, res) => {
   const all = await db.select().from(users)
   res.json(all.map(serializeUser))
+})
+
+// Called once the user has clicked the verification link in their email.
+// `req.emailVerified` reflects the Firebase ID token's own `email_verified`
+// claim — the client must force-refresh its token (after reload()) before
+// calling this, otherwise the claim will still be stale/false.
+usersRouter.post('/confirm-email-verified', attachProfile, async (req, res) => {
+  if (!req.profile) {
+    res.status(404).json({ error: 'No profile yet' })
+    return
+  }
+  if (!req.emailVerified) {
+    res.status(400).json({ error: 'Email not verified yet. Please click the link in your email first.' })
+    return
+  }
+  if (req.profile.status !== 'unverified') {
+    res.json(serializeUser(req.profile))
+    return
+  }
+  const newStatus = req.profile.role === 'admin' ? 'approved' : 'pending'
+  const [updated] = await db.update(users).set({ status: newStatus }).where(eq(users.id, req.profile.id)).returning()
+  res.json(serializeUser(updated))
 })
 
 // Self-service profile edits: fullName, favoriteTeam, bio, avatarUrl, presence. Never role/status.

@@ -17,6 +17,8 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   if (!firebaseUser) return <Navigate to="/login" replace />
   if (!profile) return <Navigate to="/login" replace />
 
+  if (profile.status === 'unverified') return <Navigate to="/verify-email" replace />
+
   if (profile.status === 'pending' || profile.status === 'rejected' || profile.status === 'banned') {
     return <Navigate to="/pending" replace />
   }

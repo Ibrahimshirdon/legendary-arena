@@ -64,8 +64,8 @@ export default function Register() {
         password: values.password,
         avatarUrl: finalAvatarUrl,
       })
-      toast.success('Account created! Waiting for admin approval.')
-      navigate('/pending')
+      toast.success('Account created! Check your email to verify it.')
+      navigate('/verify-email')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not create account.')
     } finally {

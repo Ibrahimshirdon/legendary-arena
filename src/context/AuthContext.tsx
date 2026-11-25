@@ -2,6 +2,7 @@ import {
   type User as FirebaseUser,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
@@ -32,6 +33,8 @@ interface AuthContextValue {
   isUsernameTaken: (username: string) => Promise<boolean>
   refreshProfile: () => Promise<void>
   deleteAccount: () => Promise<void>
+  resendVerificationEmail: () => Promise<void>
+  confirmEmailVerified: () => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -114,6 +117,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await credential.user.delete().catch(() => {})
       throw err instanceof ApiError ? err : new Error('Could not create your profile.')
     }
+
+    await sendEmailVerification(credential.user, {
+      url: `${window.location.origin}/login`,
+    }).catch(() => {})
   }
 
   async function login(identifier: string, password: string) {
@@ -138,6 +145,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth).catch(() => {})
   }
 
+  async function resendVerificationEmail() {
+    if (!auth.currentUser) throw new Error('You need to be signed in to do that.')
+    await sendEmailVerification(auth.currentUser, { url: `${window.location.origin}/login` })
+  }
+
+  /** Reloads the Firebase user, force-refreshes its ID token (so the
+   * `email_verified` claim is current), then tells the backend to move the
+   * account past the unverified stage. Returns whether it succeeded. */
+  async function confirmEmailVerified() {
+    if (!auth.currentUser) return false
+    await auth.currentUser.reload()
+    await auth.currentUser.getIdToken(true)
+    if (!auth.currentUser.emailVerified) return false
+    const updated = await api.post<UserProfile>('/users/confirm-email-verified')
+    setProfile(updated)
+    return true
+  }
+
   const value = useMemo<AuthContextValue>(
     () => ({
       firebaseUser,
@@ -150,6 +175,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isUsernameTaken,
       refreshProfile,
       deleteAccount,
+      resendVerificationEmail,
+      confirmEmailVerified,
     }),
     [firebaseUser, profile, authResolved, profileResolved],
   )

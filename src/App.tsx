@@ -10,6 +10,7 @@ import ForgotPassword from '@/pages/auth/ForgotPassword'
 import Login from '@/pages/auth/Login'
 import PendingApproval from '@/pages/auth/PendingApproval'
 import Register from '@/pages/auth/Register'
+import VerifyEmail from '@/pages/auth/VerifyEmail'
 import ChatRedirect from '@/pages/chat/ChatRedirect'
 import Dashboard from '@/pages/Dashboard'
 import HallOfFame from '@/pages/halloffame/HallOfFame'
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/pending" element={<PendingApproval />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
 
           <Route
             element={

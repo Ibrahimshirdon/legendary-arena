@@ -1,5 +1,5 @@
 export type UserRole = 'admin' | 'member'
-export type AccountStatus = 'pending' | 'approved' | 'rejected' | 'banned'
+export type AccountStatus = 'unverified' | 'pending' | 'approved' | 'rejected' | 'banned'
 
 export interface UserProfile {
   uid: string

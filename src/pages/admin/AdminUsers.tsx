@@ -20,6 +20,7 @@ export default function AdminUsers() {
   if (!profile) return null
 
   const grouped: Record<string, UserProfile[]> = {
+    unverified: players.filter((p) => p.status === 'unverified'),
     pending: players.filter((p) => p.status === 'pending'),
     approved: players.filter((p) => p.status === 'approved'),
     banned: players.filter((p) => p.status === 'banned' || p.status === 'rejected'),
@@ -31,6 +32,7 @@ export default function AdminUsers() {
       <div className="p-4 lg:p-8">
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
+            <TabsTrigger value="unverified">Unverified ({grouped.unverified.length})</TabsTrigger>
             <TabsTrigger value="pending">Pending ({grouped.pending.length})</TabsTrigger>
             <TabsTrigger value="approved">Approved ({grouped.approved.length})</TabsTrigger>
             <TabsTrigger value="banned">Restricted ({grouped.banned.length})</TabsTrigger>
