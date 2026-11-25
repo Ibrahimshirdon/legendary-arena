@@ -31,6 +31,7 @@ interface AuthContextValue {
   resetPassword: (email: string) => Promise<void>
   isUsernameTaken: (username: string) => Promise<boolean>
   refreshProfile: () => Promise<void>
+  deleteAccount: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -132,6 +133,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await sendPasswordResetEmail(auth, email)
   }
 
+  async function deleteAccount() {
+    await api.delete('/users/me')
+    await signOut(auth).catch(() => {})
+  }
+
   const value = useMemo<AuthContextValue>(
     () => ({
       firebaseUser,
@@ -143,6 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       resetPassword,
       isUsernameTaken,
       refreshProfile,
+      deleteAccount,
     }),
     [firebaseUser, profile, authResolved, profileResolved],
   )

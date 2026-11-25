@@ -1,19 +1,24 @@
 import { updatePassword } from 'firebase/auth'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Trash2 } from 'lucide-react'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Topbar } from '@/components/layout/Topbar'
 import { AvatarPicker } from '@/components/shared/AvatarPicker'
+import { ConfirmationDialog } from '@/components/shared/ConfirmationDialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/context/AuthContext'
-import { api } from '@/lib/api'
+import { api, ApiError } from '@/lib/api'
 import { uploadAvatar } from '@/lib/storage'
 
 export default function Settings() {
-  const { profile, firebaseUser, refreshProfile } = useAuth()
+  const { profile, firebaseUser, refreshProfile, deleteAccount } = useAuth()
+  const navigate = useNavigate()
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl ?? '')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [fullName, setFullName] = useState(profile?.fullName ?? '')
@@ -66,6 +71,18 @@ export default function Settings() {
       toast.error('Could not update password. Please sign out and sign back in, then try again.')
     } finally {
       setChangingPassword(false)
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true)
+    try {
+      await deleteAccount()
+      toast.success('Your account has been deleted.')
+      navigate('/login')
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not delete your account.')
+      setDeleting(false)
     }
   }
 
@@ -126,7 +143,29 @@ export default function Settings() {
             Update password
           </Button>
         </section>
+
+        <section className="space-y-4 rounded-2xl border border-destructive/30 bg-destructive/5 p-5">
+          <h3 className="font-bold text-destructive">Danger Zone</h3>
+          <p className="text-sm text-muted-foreground">
+            Permanently deletes your account. You'll be signed out and can never log back in with it. Your match
+            history, trophies, and chat messages stay (attributed to "Deleted User") since they're shared with
+            other players — only your personal info and login are removed.
+          </p>
+          <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+            <Trash2 className="size-4" /> Delete My Account
+          </Button>
+        </section>
       </div>
+
+      <ConfirmationDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete your account?"
+        description="This cannot be undone. You will be signed out immediately and will not be able to log back in."
+        confirmLabel={deleting ? 'Deleting…' : 'Delete My Account'}
+        variant="destructive"
+        onConfirm={handleDeleteAccount}
+      />
     </div>
   )
 }

@@ -1,7 +1,9 @@
+import crypto from 'node:crypto'
 import { eq, sql } from 'drizzle-orm'
 import { Router } from 'express'
 import { db } from '../db/client'
-import { bootstrap, users } from '../db/schema'
+import { bootstrap, roomMembers, roomPendingRequests, tournamentRegistrations, users } from '../db/schema'
+import { adminAuth } from '../firebaseAdmin'
 import { requireAuth } from '../middleware/auth'
 import { attachProfile, requireAdmin } from '../middleware/roles'
 import { notify } from './notifications'
@@ -161,6 +163,57 @@ usersRouter.patch('/me', attachProfile, async (req, res) => {
     .where(eq(users.id, req.profile.id))
     .returning()
   res.json(serializeUser(updated))
+})
+
+// Self-service account deletion. This doesn't hard-delete the row: a user's
+// matches, trophies, and chat messages are also part of *other* players'
+// shared history (opponents, teammates, standings), so wiping them would
+// corrupt everyone else's records. Instead we scrub personal info, drop
+// current memberships/registrations, and remove the Firebase Auth account
+// so they can never log back in — matches/trophies/chat stay, attributed to
+// "Deleted User".
+usersRouter.delete('/me', attachProfile, async (req, res) => {
+  if (!req.profile) {
+    res.status(404).json({ error: 'No profile yet' })
+    return
+  }
+  const uid = req.profile.id
+
+  if (req.profile.role === 'admin') {
+    const admins = await db.select({ id: users.id }).from(users).where(eq(users.role, 'admin'))
+    if (admins.length <= 1) {
+      res.status(400).json({
+        error: 'You are the only admin. Promote another member to admin before deleting your account.',
+      })
+      return
+    }
+  }
+
+  await db.delete(roomMembers).where(eq(roomMembers.userId, uid))
+  await db.delete(roomPendingRequests).where(eq(roomPendingRequests.userId, uid))
+  await db.delete(tournamentRegistrations).where(eq(tournamentRegistrations.userId, uid))
+
+  const anonymousTag = crypto.randomUUID().slice(0, 8)
+  await db
+    .update(users)
+    .set({
+      username: `deleted_${anonymousTag}`,
+      usernameLower: `deleted_${anonymousTag}`,
+      fullName: 'Deleted User',
+      email: `deleted-${uid}@legendary-arena.invalid`,
+      phone: null,
+      avatarUrl: '',
+      bio: null,
+      favoriteTeam: null,
+      role: 'member',
+      status: 'banned',
+      online: false,
+    })
+    .where(eq(users.id, uid))
+
+  await adminAuth.deleteUser(uid).catch(() => {})
+
+  res.status(204).end()
 })
 
 // Admin-only: approve/reject/ban members and promote/demote admins.
