@@ -28,3 +28,8 @@ export async function rejectJoinRequest(room: Room, uid: string) {
   await api.post(`/rooms/${room.id}/reject/${uid}`)
   refetchAppStores()
 }
+
+export async function deleteRoom(room: Room) {
+  await api.delete(`/rooms/${room.id}`)
+  refetchAppStores()
+}

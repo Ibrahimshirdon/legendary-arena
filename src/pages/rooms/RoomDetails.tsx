@@ -1,9 +1,10 @@
-import { Check, Copy, Trophy, Users, X } from 'lucide-react'
+import { Check, Copy, Trash2, Trophy, Users, X } from 'lucide-react'
 import { useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Topbar } from '@/components/layout/Topbar'
 import { ChatPanel } from '@/components/shared/ChatPanel'
+import { ConfirmationDialog } from '@/components/shared/ConfirmationDialog'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { LeaderboardTable } from '@/components/shared/LeaderboardTable'
 import { PlayerCard } from '@/components/shared/PlayerCard'
@@ -12,7 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/context/AuthContext'
-import { approveJoinRequest, rejectJoinRequest } from '@/lib/rooms'
+import { approveJoinRequest, deleteRoom, rejectJoinRequest } from '@/lib/rooms'
 import { useRoomsStore, useTournamentsStore } from '@/store/appStores'
 import { usePlayersList } from '@/store/playersStore'
 
@@ -24,6 +25,9 @@ export default function RoomDetails() {
   const allPlayers = usePlayersList()
   const [searchParams] = useSearchParams()
   const [tab, setTab] = useState(searchParams.get('tab') ?? 'overview')
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const navigate = useNavigate()
 
   const room = rooms.find((r) => r.id === roomId)
 
@@ -42,6 +46,19 @@ export default function RoomDetails() {
   function copyInvite() {
     void navigator.clipboard.writeText(inviteCode)
     toast.success('Invite code copied!')
+  }
+
+  const currentRoom = room
+  async function handleDelete() {
+    setDeleting(true)
+    try {
+      await deleteRoom(currentRoom)
+      toast.success(`${currentRoom.name} has been deleted.`)
+      navigate('/rooms')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not delete this community.')
+      setDeleting(false)
+    }
   }
 
   return (
@@ -82,6 +99,19 @@ export default function RoomDetails() {
                 </div>
               </div>
             </div>
+
+            {profile.role === 'admin' && (
+              <div className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/5 p-5">
+                <h3 className="font-bold text-destructive">Danger Zone</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Permanently deletes this community along with its chat, tournaments, matches, and trophies. This
+                  cannot be undone.
+                </p>
+                <Button variant="destructive" size="sm" className="mt-3" onClick={() => setDeleteOpen(true)}>
+                  <Trash2 className="size-4" /> Delete Community
+                </Button>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="chat">
@@ -145,6 +175,16 @@ export default function RoomDetails() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <ConfirmationDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={`Delete ${room.name}?`}
+        description="This permanently removes the community, its chat history, tournaments, matches, and trophies for everyone. This cannot be undone."
+        confirmLabel={deleting ? 'Deleting…' : 'Delete Community'}
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

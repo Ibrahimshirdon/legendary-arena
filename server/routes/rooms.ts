@@ -117,6 +117,20 @@ roomsRouter.post('/:id/approve/:uid', async (req, res) => {
   res.status(204).end()
 })
 
+// Admin-only. Cascades at the DB level: members, pending requests, chat
+// messages/reactions, announcements, tournaments, matches, and trophies tied
+// to this room are all removed along with it.
+roomsRouter.delete('/:id', requireAdmin, async (req, res) => {
+  const roomId = req.params.id as string
+  const [room] = await db.select().from(rooms).where(eq(rooms.id, roomId)).limit(1)
+  if (!room) {
+    res.status(404).json({ error: 'Room not found' })
+    return
+  }
+  await db.delete(rooms).where(eq(rooms.id, roomId))
+  res.status(204).end()
+})
+
 roomsRouter.post('/:id/reject/:uid', async (req, res) => {
   const roomId = req.params.id as string
   const targetUid = req.params.uid as string
