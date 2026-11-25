@@ -1,4 +1,4 @@
-import { Ban, Check, Crown, ShieldOff, UserMinus, X } from 'lucide-react'
+import { Ban, Crown, ShieldOff, UserMinus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Topbar } from '@/components/layout/Topbar'
@@ -15,25 +15,23 @@ import type { UserProfile } from '@/types'
 export default function AdminUsers() {
   const { profile } = useAuth()
   const players = usePlayersList()
-  const [tab, setTab] = useState('pending')
+  const [tab, setTab] = useState('unverified')
 
   if (!profile) return null
 
   const grouped: Record<string, UserProfile[]> = {
     unverified: players.filter((p) => p.status === 'unverified'),
-    pending: players.filter((p) => p.status === 'pending'),
     approved: players.filter((p) => p.status === 'approved'),
     banned: players.filter((p) => p.status === 'banned' || p.status === 'rejected'),
   }
 
   return (
     <div>
-      <Topbar title="User Management" subtitle="Approve, promote, or restrict community members." />
+      <Topbar title="User Management" subtitle="Promote or restrict community members." />
       <div className="p-4 lg:p-8">
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
             <TabsTrigger value="unverified">Unverified ({grouped.unverified.length})</TabsTrigger>
-            <TabsTrigger value="pending">Pending ({grouped.pending.length})</TabsTrigger>
             <TabsTrigger value="approved">Approved ({grouped.approved.length})</TabsTrigger>
             <TabsTrigger value="banned">Restricted ({grouped.banned.length})</TabsTrigger>
           </TabsList>
@@ -72,17 +70,6 @@ function UserRow({ player, currentUid }: { player: UserProfile; currentUid: stri
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {player.status === 'pending' && (
-          <>
-            <Button size="sm" onClick={() => void setUserStatus(player.uid, 'approved')}>
-              <Check className="size-4" /> Approve
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => void setUserStatus(player.uid, 'rejected')}>
-              <X className="size-4" /> Reject
-            </Button>
-          </>
-        )}
-
         {player.status === 'approved' && !isSelf && (
           <>
             {player.role === 'admin' ? (

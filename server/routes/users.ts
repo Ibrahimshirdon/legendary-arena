@@ -146,6 +146,7 @@ usersRouter.get('/', async (_req, res) => {
 // `req.emailVerified` reflects the Firebase ID token's own `email_verified`
 // claim — the client must force-refresh its token (after reload()) before
 // calling this, otherwise the claim will still be stale/false.
+// Verifying is the only gate: there's no separate admin-approval step.
 usersRouter.post('/confirm-email-verified', attachProfile, async (req, res) => {
   if (!req.profile) {
     res.status(404).json({ error: 'No profile yet' })
@@ -159,8 +160,7 @@ usersRouter.post('/confirm-email-verified', attachProfile, async (req, res) => {
     res.json(serializeUser(req.profile))
     return
   }
-  const newStatus = req.profile.role === 'admin' ? 'approved' : 'pending'
-  const [updated] = await db.update(users).set({ status: newStatus }).where(eq(users.id, req.profile.id)).returning()
+  const [updated] = await db.update(users).set({ status: 'approved' }).where(eq(users.id, req.profile.id)).returning()
   res.json(serializeUser(updated))
 })
 

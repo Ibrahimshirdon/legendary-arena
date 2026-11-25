@@ -14,7 +14,7 @@ export default function AdminDashboard() {
   const { items: matches } = useMatchesStore()
   const { items: requests } = useTournamentRequestsStore()
 
-  const pendingUsers = players.filter((p) => p.status === 'pending')
+  const unverifiedUsers = players.filter((p) => p.status === 'unverified')
   const disputedMatches = matches.filter((m) => m.status === 'disputed')
   const pendingRequests = requests.filter((r) => r.status === 'pending')
   const activeTournaments = tournaments.filter((t) => t.status === 'active')
@@ -36,16 +36,16 @@ export default function AdminDashboard() {
         <div className="grid gap-6 lg:grid-cols-2">
           <section className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="font-bold">Pending Approvals</h2>
+              <h2 className="font-bold">Unverified Accounts</h2>
               <Button asChild size="sm" variant="outline">
                 <Link to="/admin/users">Manage Users</Link>
               </Button>
             </div>
-            {pendingUsers.length === 0 ? (
-              <EmptyState icon={UserCheck} title="No pending approvals" />
+            {unverifiedUsers.length === 0 ? (
+              <EmptyState icon={UserCheck} title="Everyone's verified" />
             ) : (
               <div className="space-y-2">
-                {pendingUsers.map((p) => (
+                {unverifiedUsers.map((p) => (
                   <div key={p.uid} className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
                     <span className="text-sm font-semibold">{p.username}</span>
                     <span className="text-xs text-muted-foreground">{p.email}</span>

@@ -19,7 +19,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (profile.status === 'unverified') return <Navigate to="/verify-email" replace />
 
-  if (profile.status === 'pending' || profile.status === 'rejected' || profile.status === 'banned') {
+  if (profile.status === 'rejected' || profile.status === 'banned') {
     return <Navigate to="/pending" replace />
   }
 
