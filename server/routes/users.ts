@@ -18,6 +18,27 @@ usersRouter.get('/check-username/:username', async (req, res) => {
   res.json({ taken: Boolean(existing) })
 })
 
+// Public: lets the login screen accept a username instead of an email.
+// Firebase Auth only signs in by email, so we resolve the username to its
+// account email first, client-side, before calling signInWithEmailAndPassword.
+usersRouter.get('/resolve-login/:identifier', async (req, res) => {
+  const identifier = req.params.identifier as string
+  if (identifier.includes('@')) {
+    res.json({ email: identifier })
+    return
+  }
+  const [existing] = await db
+    .select({ email: users.email })
+    .from(users)
+    .where(eq(users.usernameLower, identifier.toLowerCase()))
+    .limit(1)
+  if (!existing) {
+    res.status(404).json({ error: 'No account found with that username.' })
+    return
+  }
+  res.json({ email: existing.email })
+})
+
 usersRouter.use(requireAuth)
 
 type UserRow = typeof users.$inferSelect
@@ -31,6 +52,7 @@ export function serializeUser(row: UserRow) {
     usernameLower: row.usernameLower,
     fullName: row.fullName,
     email: row.email,
+    phone: row.phone ?? undefined,
     avatarUrl: row.avatarUrl,
     role: row.role,
     status: row.status,
@@ -57,11 +79,12 @@ export function serializeUser(row: UserRow) {
 
 // Create the profile row right after Firebase sign-up.
 usersRouter.post('/', async (req, res) => {
-  const { fullName, username, avatarUrl, email } = req.body as {
+  const { fullName, username, avatarUrl, email, phone } = req.body as {
     fullName: string
     username: string
     avatarUrl: string
     email: string
+    phone?: string
   }
   if (!fullName || !username || !email) {
     res.status(400).json({ error: 'fullName, username, and email are required' })
@@ -91,6 +114,7 @@ usersRouter.post('/', async (req, res) => {
       usernameLower,
       fullName,
       email,
+      phone: phone || null,
       avatarUrl: avatarUrl ?? '',
       role: isFirstUser ? 'admin' : 'member',
       status: isFirstUser ? 'approved' : 'pending',
@@ -122,13 +146,14 @@ usersRouter.patch('/me', attachProfile, async (req, res) => {
     res.status(404).json({ error: 'No profile yet' })
     return
   }
-  const { fullName, favoriteTeam, bio, avatarUrl, online } = req.body as Record<string, unknown>
+  const { fullName, favoriteTeam, bio, avatarUrl, online, phone } = req.body as Record<string, unknown>
   const [updated] = await db
     .update(users)
     .set({
       ...(fullName !== undefined ? { fullName: fullName as string } : {}),
       ...(favoriteTeam !== undefined ? { favoriteTeam: favoriteTeam as string } : {}),
       ...(bio !== undefined ? { bio: bio as string } : {}),
+      ...(phone !== undefined ? { phone: phone as string } : {}),
       ...(avatarUrl !== undefined ? { avatarUrl: avatarUrl as string } : {}),
       ...(online !== undefined ? { online: online as boolean } : {}),
       lastSeen: Date.now(),

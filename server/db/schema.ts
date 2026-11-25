@@ -13,6 +13,7 @@ export const users = pgTable('users', {
   usernameLower: text('username_lower').notNull().unique(),
   fullName: text('full_name').notNull(),
   email: text('email').notNull().unique(),
+  phone: text('phone'),
   avatarUrl: text('avatar_url').notNull().default(''),
   role: text('role').notNull().default('member'), // 'member' | 'admin'
   status: text('status').notNull().default('pending'), // 'pending' | 'approved' | 'rejected' | 'banned'

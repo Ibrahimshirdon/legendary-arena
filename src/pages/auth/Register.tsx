@@ -22,6 +22,7 @@ const schema = z
       .max(20, 'Max 20 characters')
       .regex(/^[a-zA-Z0-9_]+$/, 'Letters, numbers, underscores only'),
     email: z.string().email('Enter a valid email'),
+    phone: z.string().optional(),
     password: z.string().min(6, 'At least 6 characters'),
     confirmPassword: z.string(),
   })
@@ -59,6 +60,7 @@ export default function Register() {
         fullName: values.fullName,
         username: values.username,
         email: values.email,
+        phone: values.phone,
         password: values.password,
         avatarUrl: finalAvatarUrl,
       })
@@ -97,6 +99,11 @@ export default function Register() {
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" placeholder="you@email.com" {...register('email')} />
           {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="phone">Phone number (optional)</Label>
+          <Input id="phone" type="tel" placeholder="+1 555 123 4567" {...register('phone')} />
         </div>
 
         <div className="grid grid-cols-2 gap-3">

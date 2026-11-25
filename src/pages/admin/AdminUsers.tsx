@@ -65,6 +65,7 @@ function UserRow({ player, currentUid }: { player: UserProfile; currentUid: stri
             {player.role === 'admin' && <Badge variant="secondary">Admin</Badge>}
           </div>
           <p className="text-xs text-muted-foreground">{player.email}</p>
+          {player.phone && <p className="text-xs text-muted-foreground">{player.phone}</p>}
         </div>
       </div>
 

@@ -17,6 +17,7 @@ export default function Settings() {
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl ?? '')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [fullName, setFullName] = useState(profile?.fullName ?? '')
+  const [phone, setPhone] = useState(profile?.phone ?? '')
   const [favoriteTeam, setFavoriteTeam] = useState(profile?.favoriteTeam ?? '')
   const [bio, setBio] = useState(profile?.bio ?? '')
   const [saving, setSaving] = useState(false)
@@ -37,6 +38,7 @@ export default function Settings() {
       }
       await api.patch('/users/me', {
         fullName,
+        phone,
         favoriteTeam,
         bio,
         avatarUrl: finalAvatarUrl,
@@ -84,6 +86,11 @@ export default function Settings() {
           <div className="space-y-1.5">
             <Label htmlFor="fullName">Full name</Label>
             <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="phone">Phone number (optional)</Label>
+            <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 555 123 4567" />
           </div>
 
           <div className="space-y-1.5">

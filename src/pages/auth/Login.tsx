@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { useAuth } from '@/context/AuthContext'
 
 const schema = z.object({
-  email: z.string().email('Enter a valid email'),
+  identifier: z.string().min(1, 'Enter your email or username'),
   password: z.string().min(1, 'Password is required'),
 })
 
@@ -32,7 +32,7 @@ export default function Login() {
   async function onSubmit(values: FormValues) {
     setSubmitting(true)
     try {
-      await login(values.email, values.password)
+      await login(values.identifier, values.password)
       navigate('/')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not sign in.')
@@ -45,9 +45,9 @@ export default function Login() {
     <AuthShell title="Welcome back ⚽" subtitle="Sign in to get back to your arena.">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="you@email.com" {...register('email')} />
-          {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+          <Label htmlFor="identifier">Email or username</Label>
+          <Input id="identifier" placeholder="you@email.com or your_username" {...register('identifier')} />
+          {errors.identifier && <p className="text-xs text-destructive">{errors.identifier.message}</p>}
         </div>
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">

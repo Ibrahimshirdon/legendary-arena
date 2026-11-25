@@ -16,6 +16,7 @@ interface RegisterInput {
   fullName: string
   username: string
   email: string
+  phone?: string
   password: string
   avatarUrl: string
 }
@@ -25,7 +26,7 @@ interface AuthContextValue {
   profile: UserProfile | null
   loading: boolean
   register: (input: RegisterInput) => Promise<void>
-  login: (email: string, password: string) => Promise<void>
+  login: (identifier: string, password: string) => Promise<void>
   logout: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
   isUsernameTaken: (username: string) => Promise<boolean>
@@ -104,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fullName: input.fullName,
         username: input.username,
         email: input.email,
+        phone: input.phone,
         avatarUrl: input.avatarUrl,
       })
     } catch (err) {
@@ -113,7 +115,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function login(email: string, password: string) {
+  async function login(identifier: string, password: string) {
+    const trimmed = identifier.trim()
+    const { email } = await api.get<{ email: string }>(
+      `/users/resolve-login/${encodeURIComponent(trimmed)}`,
+    )
     await signInWithEmailAndPassword(auth, email, password)
   }
 

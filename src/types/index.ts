@@ -7,6 +7,7 @@ export interface UserProfile {
   usernameLower: string
   fullName: string
   email: string
+  phone?: string
   avatarUrl: string
   role: UserRole
   status: AccountStatus

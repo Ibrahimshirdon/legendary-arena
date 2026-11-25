@@ -7,6 +7,7 @@ import { PlayerAvatar } from '@/components/shared/PlayerAvatar'
 import { StatCard } from '@/components/shared/StatCard'
 import { TrophyCard } from '@/components/shared/TrophyCard'
 import { Badge } from '@/components/ui/badge'
+import { useAuth } from '@/context/AuthContext'
 import { computeAchievements } from '@/lib/achievements'
 import { formatDate, goalDifference, winRate } from '@/lib/utils'
 import { useMatchesStore, useTournamentsStore, useTrophiesStore } from '@/store/appStores'
@@ -23,6 +24,7 @@ const iconMap: Record<string, typeof Trophy> = {
 
 export default function PlayerProfile() {
   const { uid } = useParams<{ uid: string }>()
+  const { profile: viewer } = useAuth()
   const player = usePlayer(uid)
   const { items: matches } = useMatchesStore()
   const { items: tournaments } = useTournamentsStore()
@@ -67,6 +69,9 @@ export default function PlayerProfile() {
                 <Calendar className="size-3.5" /> Joined {formatDate(player.createdAt)}
               </p>
               {player.favoriteTeam && <p className="mt-1 text-sm text-muted-foreground">⚽ {player.favoriteTeam}</p>}
+              {player.phone && (viewer?.uid === player.uid || viewer?.role === 'admin') && (
+                <p className="mt-1 text-sm text-muted-foreground">📱 {player.phone}</p>
+              )}
             </div>
           </div>
         </div>
