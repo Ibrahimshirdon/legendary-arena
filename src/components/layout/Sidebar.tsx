@@ -32,9 +32,7 @@ export function Sidebar() {
   return (
     <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-card/40 lg:flex">
       <div className="flex items-center gap-2 px-6 py-6">
-        <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground font-black">
-          LA
-        </div>
+        <img src="/logo.jpg" alt="Legendary Arena" className="size-9 rounded-xl object-cover" />
         <div>
           <p className="text-sm font-bold leading-none tracking-tight">LEGENDARY ARENA</p>
           <p className="text-[11px] text-muted-foreground">One community. One champion.</p>

@@ -14,9 +14,7 @@ export function AuthShell({
     <div className="flex min-h-screen bg-background pitch-pattern">
       <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden border-r border-border bg-card p-12 lg:flex">
         <div className="flex items-center gap-2">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-black">
-            LA
-          </div>
+          <img src="/logo.jpg" alt="Legendary Arena" className="size-10 rounded-xl object-cover" />
           <span className="text-lg font-bold tracking-tight">LEGENDARY ARENA</span>
         </div>
 
@@ -41,9 +39,7 @@ export function AuthShell({
       <div className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-2 lg:hidden">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground font-black">
-              LA
-            </div>
+            <img src="/logo.jpg" alt="Legendary Arena" className="size-9 rounded-xl object-cover" />
             <span className="text-base font-bold tracking-tight">LEGENDARY ARENA</span>
           </div>
           <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
