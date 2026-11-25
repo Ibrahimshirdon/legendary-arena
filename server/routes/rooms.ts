@@ -2,11 +2,22 @@ import crypto from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 import { Router } from 'express'
 import { db } from '../db/client'
-import { roomMembers, roomPendingRequests, rooms } from '../db/schema'
+import {
+  matches,
+  roomMembers,
+  roomPendingRequests,
+  rooms,
+  tournamentParticipants,
+  tournaments,
+  trophies,
+} from '../db/schema'
+import { BYE } from '../lib/fixtures'
 import { requireAuth } from '../middleware/auth'
 import { attachProfile, requireAdmin, requireApproved } from '../middleware/roles'
+import { pointSystemFor, statsDeltaFor } from './matches'
 import { messagesRouter } from './messages'
 import { notify } from './notifications'
+import { incrementUserStats } from './users'
 
 export const roomsRouter = Router()
 roomsRouter.use(requireAuth, attachProfile)
@@ -117,9 +128,11 @@ roomsRouter.post('/:id/approve/:uid', async (req, res) => {
   res.status(204).end()
 })
 
-// Admin-only. Cascades at the DB level: members, pending requests, chat
-// messages/reactions, announcements, tournaments, matches, and trophies tied
-// to this room are all removed along with it.
+// Admin-only. Before the cascading DB delete (members, pending requests, chat
+// messages/reactions, announcements, tournaments, matches, and trophies), this
+// reverses every stat contribution those matches/tournaments/trophies made to
+// player profiles — otherwise the leaderboard would keep stale numbers from
+// records that no longer exist.
 roomsRouter.delete('/:id', requireAdmin, async (req, res) => {
   const roomId = req.params.id as string
   const [room] = await db.select().from(rooms).where(eq(rooms.id, roomId)).limit(1)
@@ -127,6 +140,42 @@ roomsRouter.delete('/:id', requireAdmin, async (req, res) => {
     res.status(404).json({ error: 'Room not found' })
     return
   }
+
+  const roomMatches = await db.select().from(matches).where(eq(matches.roomId, roomId))
+  const pointSystemCache = new Map<string, { win: number; draw: number; loss: number }>()
+  for (const m of roomMatches) {
+    if (m.status !== 'completed' || m.score1 === null || m.score2 === null) continue
+    if (m.player1Id === BYE || m.player2Id === BYE) continue
+    let pointSystem = pointSystemCache.get(m.tournamentId)
+    if (!pointSystem) {
+      pointSystem = await pointSystemFor(m.tournamentId)
+      pointSystemCache.set(m.tournamentId, pointSystem)
+    }
+    const reverse = statsDeltaFor(m.player1Id, m.player2Id, m.score1, m.score2, pointSystem, -1)
+    await incrementUserStats(m.player1Id, reverse.player1)
+    await incrementUserStats(m.player2Id, reverse.player2)
+  }
+
+  const roomTrophies = await db.select().from(trophies).where(eq(trophies.roomId, roomId))
+  for (const t of roomTrophies) {
+    await incrementUserStats(t.winnerId, { trophies: -1 })
+    await incrementUserStats(t.runnerUpId, { runnerUps: -1 })
+    if (t.thirdPlaceId) await incrementUserStats(t.thirdPlaceId, { thirdPlaces: -1 })
+  }
+
+  const roomTournaments = await db.select().from(tournaments).where(eq(tournaments.roomId, roomId))
+  for (const t of roomTournaments) {
+    if (t.status !== 'completed') continue
+    const parts = await db
+      .select()
+      .from(tournamentParticipants)
+      .where(eq(tournamentParticipants.tournamentId, t.id))
+    for (const p of parts) {
+      if (p.participantId === BYE) continue
+      await incrementUserStats(p.participantId, { tournamentsPlayed: -1 })
+    }
+  }
+
   await db.delete(rooms).where(eq(rooms.id, roomId))
   res.status(204).end()
 })

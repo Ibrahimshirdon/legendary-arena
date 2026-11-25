@@ -48,12 +48,12 @@ function resultFor(score1: number, score2: number, player1Id: string, player2Id:
   return { winnerId: score1 > score2 ? player1Id : player2Id, isDraw: false }
 }
 
-async function pointSystemFor(tournamentId: string) {
+export async function pointSystemFor(tournamentId: string) {
   const [t] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId)).limit(1)
   return { win: t?.pointWin ?? 3, draw: t?.pointDraw ?? 1, loss: t?.pointLoss ?? 0 }
 }
 
-function statsDeltaFor(
+export function statsDeltaFor(
   player1Id: string,
   player2Id: string,
   score1: number,
