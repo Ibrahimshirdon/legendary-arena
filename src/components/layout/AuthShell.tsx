@@ -1,4 +1,4 @@
-import { Trophy } from 'lucide-react'
+import { PhoneCall, Trophy } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 export function AuthShell({
@@ -45,6 +45,22 @@ export function AuthShell({
           <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
           <div className="mt-6">{children}</div>
+
+          <div className="mt-6 flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <PhoneCall className="size-4" />
+            </div>
+            <div className="text-sm">
+              <p className="font-medium">New here and not sure how to get set up?</p>
+              <p className="text-muted-foreground">
+                Call or text{' '}
+                <a href="tel:0906251592" className="font-medium text-primary hover:underline">
+                  0906251592
+                </a>{' '}
+                and we'll walk you through it.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
