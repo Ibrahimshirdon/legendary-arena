@@ -16,19 +16,22 @@ import { submitMatchResult } from '@/lib/matches'
 import { usePlayer } from '@/store/playersStore'
 import type { Match } from '@/types'
 
-function ScoreStepper({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+function ScoreStepper({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
-    <div className="flex flex-col items-center gap-2">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-2">
-        <Button type="button" variant="outline" size="icon" onClick={() => onChange(Math.max(0, value - 1))}>
-          <Minus className="size-4" />
-        </Button>
-        <span className="w-10 text-center text-3xl font-black tabular-nums">{value}</span>
-        <Button type="button" variant="outline" size="icon" onClick={() => onChange(value + 1)}>
-          <Plus className="size-4" />
-        </Button>
-      </div>
+    <div className="flex items-center gap-1.5">
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="size-8"
+        onClick={() => onChange(Math.max(0, value - 1))}
+      >
+        <Minus className="size-3.5" />
+      </Button>
+      <span className="w-8 text-center text-2xl font-black tabular-nums">{value}</span>
+      <Button type="button" variant="outline" size="icon" className="size-8" onClick={() => onChange(value + 1)}>
+        <Plus className="size-3.5" />
+      </Button>
     </div>
   )
 }
@@ -76,18 +79,25 @@ export function MatchResultModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col items-center gap-4 py-4 sm:flex-row sm:justify-between">
-          <div className="flex flex-1 flex-col items-center gap-2">
-            <PlayerAvatar src={player1?.avatarUrl} name={player1?.username ?? 'Player 1'} size="lg" />
-            <span className="text-sm font-semibold">{player1?.username}</span>
-            <ScoreStepper label="Score" value={score1} onChange={setScore1} />
+        {/* Identity row: kept compact (no stepper here) so it never needs to wrap or stack. */}
+        <div className="flex items-center justify-between gap-2 py-3">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <PlayerAvatar src={player1?.avatarUrl} name={player1?.username ?? 'Player 1'} size="sm" />
+            <span className="truncate text-sm font-semibold">{player1?.username}</span>
           </div>
-          <span className="text-xl font-black text-muted-foreground sm:pt-8">VS</span>
-          <div className="flex flex-1 flex-col items-center gap-2">
-            <PlayerAvatar src={player2?.avatarUrl} name={player2?.username ?? 'Player 2'} size="lg" />
-            <span className="text-sm font-semibold">{player2?.username}</span>
-            <ScoreStepper label="Score" value={score2} onChange={setScore2} />
+          <span className="shrink-0 text-xs font-black text-muted-foreground">VS</span>
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+            <span className="truncate text-sm font-semibold">{player2?.username}</span>
+            <PlayerAvatar src={player2?.avatarUrl} name={player2?.username ?? 'Player 2'} size="sm" />
           </div>
+        </div>
+
+        {/* Score row: both steppers side by side, small enough to always fit without
+            pushing the dialog's height past the screen (that hid the Submit button on phones). */}
+        <div className="flex items-center justify-center gap-6 pb-2">
+          <ScoreStepper value={score1} onChange={setScore1} />
+          <span className="text-muted-foreground">-</span>
+          <ScoreStepper value={score2} onChange={setScore2} />
         </div>
 
         <DialogFooter>
