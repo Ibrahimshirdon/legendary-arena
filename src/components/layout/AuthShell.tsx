@@ -1,5 +1,55 @@
-import { PhoneCall, Trophy } from 'lucide-react'
+import { CircleHelp, MessageCircle, PhoneCall, Trophy } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { useState } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+
+const WHATSAPP_NUMBER = '252906251592'
+const PHONE_NUMBER = '0906251592'
+
+const STEPS = [
+  'Tap "Create an account" below the sign-in form.',
+  'Enter your name, pick a username, and add your email.',
+  'Choose an avatar, or just skip it — one is picked for you.',
+  'Set a password and confirm it, then submit.',
+  'Check your email for a verification link and tap it.',
+  'Come back here and log in — you\'re in!',
+]
+
+function HowToCreateAccountDialog() {
+  const [open, setOpen] = useState(false)
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button className="mt-2 flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+          <CircleHelp className="size-3.5" /> How do I create an account?
+        </button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Creating your account</DialogTitle>
+          <DialogDescription>Takes about a minute.</DialogDescription>
+        </DialogHeader>
+        <ol className="space-y-2.5 text-sm">
+          {STEPS.map((step, i) => (
+            <li key={step} className="flex gap-2.5">
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                {i + 1}
+              </span>
+              {step}
+            </li>
+          ))}
+        </ol>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export function AuthShell({
   title,
@@ -46,20 +96,35 @@ export function AuthShell({
           <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
           <div className="mt-6">{children}</div>
 
-          <div className="mt-6 flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <PhoneCall className="size-4" />
+          <div className="mt-6 rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <PhoneCall className="size-4" />
+              </div>
+              <div className="text-sm">
+                <p className="font-medium">New here and not sure how to get set up?</p>
+                <p className="text-muted-foreground">We're happy to walk you through it.</p>
+              </div>
             </div>
-            <div className="text-sm">
-              <p className="font-medium">New here and not sure how to get set up?</p>
-              <p className="text-muted-foreground">
-                Call or text{' '}
-                <a href="tel:0906251592" className="font-medium text-primary hover:underline">
-                  0906251592
-                </a>{' '}
-                and we'll walk you through it.
-              </p>
+
+            <div className="mt-3 flex gap-2">
+              <a
+                href={`tel:${PHONE_NUMBER}`}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border py-2 text-xs font-semibold hover:border-primary/40"
+              >
+                <PhoneCall className="size-3.5" /> Call/Text
+              </a>
+              <a
+                href={`https://wa.me/${WHATSAPP_NUMBER}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#25D366]/40 bg-[#25D366]/10 py-2 text-xs font-semibold text-[#25D366] hover:bg-[#25D366]/20"
+              >
+                <MessageCircle className="size-3.5" /> WhatsApp
+              </a>
             </div>
+
+            <HowToCreateAccountDialog />
           </div>
         </div>
       </div>
