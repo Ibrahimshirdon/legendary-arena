@@ -1,14 +1,17 @@
 import {
+  browserLocalPersistence,
   type User as FirebaseUser,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
+  setPersistence,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
 } from 'firebase/auth'
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { api, ApiError } from '@/lib/api'
 import { auth } from '@/lib/firebase'
 import type { UserProfile } from '@/types'
@@ -25,6 +28,13 @@ interface RegisterInput {
 interface AuthContextValue {
   firebaseUser: FirebaseUser | null
   profile: UserProfile | null
+  /** True only until Firebase's very first onAuthStateChanged callback fires. */
+  authLoading: boolean
+  /** True while a profile fetch is in flight (initial load or background refresh). */
+  profileLoading: boolean
+  /** Message from the most recent failed profile fetch, if the last attempt failed. Not cleared by a successful background refresh of something else — only by the next fetch attempt. */
+  profileError: string | null
+  /** Convenience flag for a full-screen spinner: true only while we have nothing to show yet. */
   loading: boolean
   register: (input: RegisterInput) => Promise<void>
   login: (identifier: string, password: string) => Promise<void>
@@ -39,43 +49,96 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+function describeError(err: unknown) {
+  return err instanceof Error ? err.message : 'Could not load your profile.'
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [authResolved, setAuthResolved] = useState(false)
-  const [profileResolved, setProfileResolved] = useState(false)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [profileError, setProfileError] = useState<string | null>(null)
 
+  /**
+   * Fetches the profile. On failure, this NEVER clears an already-loaded
+   * profile and NEVER signs the user out for network errors, timeouts, or
+   * 5xx/502/503 responses (Render cold starts, DB hiccups, etc.) — it just
+   * records the error so the UI can show a retry state while keeping the
+   * Firebase session intact.
+   *
+   * The one exception: a 401 means our backend rejected the ID token. Even
+   * then we don't assume the session is dead — we force-refresh the Firebase
+   * token first. Only if Firebase ITSELF then reports the credential invalid
+   * (a thrown auth error, not just our backend's opinion) do we sign out.
+   * If the refresh succeeds but the backend still 401s, we treat that as a
+   * backend-side problem, not a credential problem, and keep the session.
+   */
   async function refreshProfile() {
+    if (!auth.currentUser) return
+    setProfileLoading(true)
     try {
       const current = await api.get<UserProfile>('/users/me')
       setProfile(current)
-    } catch {
-      setProfile(null)
+      setProfileError(null)
+      return
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        const currentUser = auth.currentUser
+        try {
+          await currentUser?.getIdToken(true)
+        } catch {
+          // Firebase itself confirms the credential is invalid/expired beyond
+          // recovery — a legitimate, Firebase-confirmed reason to end the session.
+          await signOut(auth).catch(() => {})
+          return
+        }
+        try {
+          const retried = await api.get<UserProfile>('/users/me')
+          setProfile(retried)
+          setProfileError(null)
+          return
+        } catch (retryErr) {
+          setProfileError(describeError(retryErr))
+          return
+        }
+      }
+      setProfileError(describeError(err))
     } finally {
-      setProfileResolved(true)
+      setProfileLoading(false)
     }
   }
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      setFirebaseUser(user)
-      setAuthResolved(true)
-      if (!user) {
-        setProfile(null)
-        setProfileResolved(true)
-      }
-    })
-    return unsub
+    let unsubscribe: (() => void) | undefined
+    // Explicit on purpose, even though it's the SDK's web default: persists
+    // the session in IndexedDB so it survives refreshes, tab closes, and
+    // browser restarts. Subscribing only after this settles means we never
+    // treat "persistence not configured yet" as "logged out".
+    setPersistence(auth, browserLocalPersistence)
+      .catch(() => {})
+      .finally(() => {
+        unsubscribe = onAuthStateChanged(auth, (user) => {
+          setFirebaseUser(user)
+          setAuthLoading(false)
+          if (!user) {
+            setProfile(null)
+            setProfileError(null)
+          }
+        })
+      })
+    return () => unsubscribe?.()
   }, [])
 
   useEffect(() => {
     if (!firebaseUser) return
-    setProfileResolved(false)
     void refreshProfile()
-    // No realtime push from the API, so poll for role/status changes
-    // (e.g. an admin approving this account) while signed in.
+    // No realtime push from the API, so poll for role/status changes (e.g. an
+    // admin promoting/banning this account) while signed in. A failed poll
+    // just leaves profile/profileError as-is — see refreshProfile above.
     const interval = setInterval(() => void refreshProfile(), 10000)
     return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firebaseUser])
 
   useEffect(() => {
@@ -101,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const taken = await isUsernameTaken(input.username)
     if (taken) throw new Error('That username is already taken.')
 
+    await setPersistence(auth, browserLocalPersistence).catch(() => {})
     const credential = await createUserWithEmailAndPassword(auth, input.email, input.password)
     await updateProfile(credential.user, { displayName: input.username })
 
@@ -128,12 +192,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { email } = await api.get<{ email: string }>(
       `/users/resolve-login/${encodeURIComponent(trimmed)}`,
     )
+    // Must complete before sign-in is considered done, so the session is
+    // guaranteed to persist even if the tab is closed immediately after.
+    await setPersistence(auth, browserLocalPersistence)
     await signInWithEmailAndPassword(auth, email, password)
   }
 
   async function logout() {
     await api.patch('/users/me', { online: false }).catch(() => {})
     await signOut(auth)
+    toast.success("You've been signed out.")
   }
 
   async function resetPassword(email: string) {
@@ -167,7 +235,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       firebaseUser,
       profile,
-      loading: !authResolved || !profileResolved,
+      authLoading,
+      profileLoading,
+      profileError,
+      // Full-screen spinner only while we have nothing to show yet: either
+      // Firebase hasn't told us whether we're signed in, or we are signed in
+      // and are still waiting on the very first profile fetch to settle.
+      loading: authLoading || (Boolean(firebaseUser) && profileLoading && !profile),
       register,
       login,
       logout,
@@ -178,7 +252,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       resendVerificationEmail,
       confirmEmailVerified,
     }),
-    [firebaseUser, profile, authResolved, profileResolved],
+    [firebaseUser, profile, authLoading, profileLoading, profileError],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

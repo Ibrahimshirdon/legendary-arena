@@ -7,8 +7,11 @@ interface PlayersState {
   loading: boolean
   started: boolean
   start: () => void
+  stop: () => void
   refetch: () => Promise<void>
 }
+
+let intervalId: ReturnType<typeof setInterval> | undefined
 
 export const usePlayersStore = create<PlayersState>((set, get) => ({
   players: {},
@@ -28,7 +31,14 @@ export const usePlayersStore = create<PlayersState>((set, get) => ({
     if (get().started) return
     set({ started: true })
     void get().refetch()
-    setInterval(() => void get().refetch(), 8000)
+    intervalId = setInterval(() => void get().refetch(), 8000)
+  },
+  // Called on logout so stale player data isn't visible to whoever signs in
+  // next on this device, and so polling doesn't keep hitting the API for no one.
+  stop: () => {
+    if (intervalId) clearInterval(intervalId)
+    intervalId = undefined
+    set({ players: {}, loading: true, started: false })
   },
 }))
 

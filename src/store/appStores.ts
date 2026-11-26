@@ -15,6 +15,14 @@ export function startAppStores() {
   useTournamentRequestsStore.getState().start()
 }
 
+export function stopAppStores() {
+  useRoomsStore.getState().stop()
+  useTournamentsStore.getState().stop()
+  useMatchesStore.getState().stop()
+  useTrophiesStore.getState().stop()
+  useTournamentRequestsStore.getState().stop()
+}
+
 export function refetchAppStores() {
   void useRoomsStore.getState().refetch()
   void useTournamentsStore.getState().refetch()

@@ -6,6 +6,7 @@ interface CollectionState<T> {
   loading: boolean
   started: boolean
   start: () => void
+  stop: () => void
   refetch: () => Promise<void>
 }
 
@@ -14,6 +15,8 @@ interface CollectionState<T> {
  * from the Neon/Express backend, so each store refetches its endpoint on an interval.
  */
 export function createCollectionStore<T>(path: string, intervalMs = 5000) {
+  let intervalId: ReturnType<typeof setInterval> | undefined
+
   return create<CollectionState<T>>((set, get) => ({
     items: [],
     loading: true,
@@ -30,7 +33,14 @@ export function createCollectionStore<T>(path: string, intervalMs = 5000) {
       if (get().started) return
       set({ started: true })
       void get().refetch()
-      setInterval(() => void get().refetch(), intervalMs)
+      intervalId = setInterval(() => void get().refetch(), intervalMs)
+    },
+    // Called on logout so stale data isn't visible to whoever signs in next
+    // on this device, and so polling doesn't keep hitting the API for no one.
+    stop: () => {
+      if (intervalId) clearInterval(intervalId)
+      intervalId = undefined
+      set({ items: [], loading: true, started: false })
     },
   }))
 }

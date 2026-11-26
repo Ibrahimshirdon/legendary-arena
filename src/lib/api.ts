@@ -2,7 +2,14 @@ import { auth } from '@/lib/firebase'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8787'
 
-export class ApiError extends Error {}
+export class ApiError extends Error {
+  status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.status = status
+  }
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await auth.currentUser?.getIdToken()
@@ -17,7 +24,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new ApiError(body.error ?? `Request failed with status ${res.status}`)
+    throw new ApiError(body.error ?? `Request failed with status ${res.status}`, res.status)
   }
 
   if (res.status === 204) return undefined as T

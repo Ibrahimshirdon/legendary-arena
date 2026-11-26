@@ -3,12 +3,19 @@ import { Outlet } from 'react-router-dom'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { usePlayersStore } from '@/store/playersStore'
-import { startAppStores } from '@/store/appStores'
+import { startAppStores, stopAppStores } from '@/store/appStores'
 
 export function AppLayout() {
   useEffect(() => {
     usePlayersStore.getState().start()
     startAppStores()
+    // Unmounts whenever we leave the authenticated area (logout, or Firebase
+    // itself ending the session) — stop polling and drop cached data so it's
+    // not visible to whoever signs in next on this device.
+    return () => {
+      usePlayersStore.getState().stop()
+      stopAppStores()
+    }
   }, [])
 
   return (
