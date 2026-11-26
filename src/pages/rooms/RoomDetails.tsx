@@ -247,7 +247,7 @@ function ChallengeButton({ roomId, opponent }: { roomId: string; opponent: UserP
         open={open}
         onOpenChange={setOpen}
         title={`Challenge ${opponent.username}?`}
-        description="Starts a friendly 1v1 match between you two. No tournament needed — once you both submit matching scores, it counts toward your stats like any other match."
+        description={`Sends ${opponent.username} a friendly 1v1 challenge. They'll need to accept it before it becomes a real match — once they do and you both submit matching scores, it counts toward your stats like any other match.`}
         confirmLabel={sending ? 'Sending…' : 'Send Challenge'}
         onConfirm={handleChallenge}
       />

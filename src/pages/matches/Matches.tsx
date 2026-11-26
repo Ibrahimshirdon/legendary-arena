@@ -11,6 +11,7 @@ import type { Match } from '@/types'
 
 const filters = [
   { value: 'mine', label: 'My Matches' },
+  { value: 'challenge_pending', label: 'Challenges' },
   { value: 'upcoming', label: 'Upcoming' },
   { value: 'awaiting_result', label: 'Awaiting Result' },
   { value: 'completed', label: 'Completed' },

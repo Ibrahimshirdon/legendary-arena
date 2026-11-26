@@ -74,7 +74,7 @@ matchesRouter.post('/friendly', async (req, res) => {
     roundOrder: 0,
     player1Id: req.uid!,
     player2Id: opponentId,
-    status: 'upcoming',
+    status: 'challenge_pending',
     scheduledAt: Date.now(),
     isDraw: false,
     createdAt: Date.now(),
@@ -83,12 +83,53 @@ matchesRouter.post('/friendly', async (req, res) => {
   await notify(opponentId, {
     type: 'match_scheduled',
     title: 'Friendly match challenge',
-    message: `${req.profile!.username} challenged you to a friendly match!`,
+    message: `${req.profile!.username} wants to challenge you to a friendly match. Accept or decline it.`,
     link: '/matches',
   })
 
   const [created] = await db.select().from(matches).where(eq(matches.id, id)).limit(1)
   res.status(201).json(serializeMatch(created))
+})
+
+// Only the challenged player (player2) can respond. Declining just removes the
+// challenge — nothing was ever played, so there's no history or stats to undo.
+matchesRouter.post('/:id/respond-challenge', async (req, res) => {
+  const { accept } = req.body as { accept: boolean }
+  const matchId = req.params.id as string
+  const [match] = await db.select().from(matches).where(eq(matches.id, matchId)).limit(1)
+  if (!match) {
+    res.status(404).json({ error: 'Match not found' })
+    return
+  }
+  if (match.status !== 'challenge_pending') {
+    res.status(400).json({ error: 'This challenge has already been responded to.' })
+    return
+  }
+  if (match.player2Id !== req.uid) {
+    res.status(403).json({ error: 'Only the challenged player can respond to this.' })
+    return
+  }
+
+  if (accept) {
+    await db.update(matches).set({ status: 'upcoming' }).where(eq(matches.id, match.id))
+    await notify(match.player1Id, {
+      type: 'match_scheduled',
+      title: 'Challenge accepted',
+      message: `${req.profile!.username} accepted your friendly match challenge. Game on!`,
+      link: '/matches',
+    })
+    res.json({ status: 'upcoming' })
+    return
+  }
+
+  await db.delete(matches).where(eq(matches.id, match.id))
+  await notify(match.player1Id, {
+    type: 'match_scheduled',
+    title: 'Challenge declined',
+    message: `${req.profile!.username} declined your friendly match challenge.`,
+    link: '/matches',
+  })
+  res.json({ status: 'declined' })
 })
 
 function resultFor(score1: number, score2: number, player1Id: string, player2Id: string) {
@@ -154,6 +195,10 @@ matchesRouter.post('/:id/submit-result', async (req, res) => {
   const isPlayer2 = match.player2Id === uid
   if (!isPlayer1 && !isPlayer2) {
     res.status(403).json({ error: 'You are not part of this match' })
+    return
+  }
+  if (match.status === 'challenge_pending') {
+    res.status(400).json({ error: 'This challenge has not been accepted yet.' })
     return
   }
 

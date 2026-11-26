@@ -139,7 +139,7 @@ export interface TournamentRequest {
   updatedAt: number
 }
 
-export type MatchStatus = 'upcoming' | 'awaiting_result' | 'completed' | 'disputed'
+export type MatchStatus = 'challenge_pending' | 'upcoming' | 'awaiting_result' | 'completed' | 'disputed'
 
 export interface MatchResultSubmission {
   score1: number
