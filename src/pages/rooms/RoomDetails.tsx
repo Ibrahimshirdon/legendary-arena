@@ -26,8 +26,21 @@ export default function RoomDetails() {
   const { items: rooms, loading } = useRoomsStore()
   const { items: tournaments } = useTournamentsStore()
   const allPlayers = usePlayersList()
-  const [searchParams] = useSearchParams()
-  const [tab, setTab] = useState(searchParams.get('tab') ?? 'overview')
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Tab lives in the URL (not local state) so that clicking into a member's
+  // profile and then hitting Back returns to the tab you were actually on,
+  // instead of resetting to Overview.
+  const tab = searchParams.get('tab') ?? 'overview'
+  function setTab(value: string) {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('tab', value)
+        return next
+      },
+      { replace: true },
+    )
+  }
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const navigate = useNavigate()

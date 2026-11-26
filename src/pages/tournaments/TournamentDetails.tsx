@@ -1,6 +1,6 @@
 import { Calendar, ListChecks, Swords, Trophy, Users } from 'lucide-react'
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Topbar } from '@/components/layout/Topbar'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -35,6 +35,20 @@ export default function TournamentDetails() {
   const { items: allMatches } = useMatchesStore()
   const allPlayers = usePlayersList()
   const [activeMatch, setActiveMatch] = useState<Match | null>(null)
+  // Tab lives in the URL so clicking into a participant's profile and hitting
+  // Back restores the tab you were on, instead of resetting to Overview.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = searchParams.get('tab') ?? 'overview'
+  function setTab(value: string) {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('tab', value)
+        return next
+      },
+      { replace: true },
+    )
+  }
 
   const tournament = tournaments.find((t) => t.id === tournamentId)
 
@@ -88,7 +102,7 @@ export default function TournamentDetails() {
       />
 
       <div className="p-4 lg:p-8">
-        <Tabs defaultValue="overview">
+        <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="flex-wrap">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="participants">Participants</TabsTrigger>
