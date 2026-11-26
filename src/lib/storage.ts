@@ -1,18 +1,17 @@
-// Kept small on purpose: avatars are embedded as data URLs in every user row,
-// and the players list is polled repeatedly, so size directly affects bandwidth.
-const MAX_DIMENSION = 128
-const JPEG_QUALITY = 0.7
+const MAX_FILE_SIZE = 15 * 1024 * 1024
 
 /**
- * Resizes an image in the browser and returns it as a small base64 data URL,
- * stored directly in the `avatarUrl` text column — no file storage service needed.
+ * Resizes an image in the browser and returns it as a base64 data URL —
+ * stored directly in a text column (avatarUrl / bannerUrl), no file storage
+ * service needed. Kept compact on purpose: these are embedded directly in
+ * rows that get polled repeatedly, so size directly affects bandwidth.
  */
-export async function uploadAvatar(_ownerId: string, file: File): Promise<string> {
-  if (file.size > 15 * 1024 * 1024) {
+async function resizeToDataUrl(file: File, maxDimension: number, quality: number): Promise<string> {
+  if (file.size > MAX_FILE_SIZE) {
     throw new Error('That image is too large. Please choose a photo under 15MB.')
   }
   const bitmap = await createImageBitmap(file)
-  const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height))
+  const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height))
   const width = Math.round(bitmap.width * scale)
   const height = Math.round(bitmap.height * scale)
 
@@ -23,7 +22,17 @@ export async function uploadAvatar(_ownerId: string, file: File): Promise<string
   if (!ctx) throw new Error('Could not process image.')
   ctx.drawImage(bitmap, 0, 0, width, height)
 
-  return canvas.toDataURL('image/jpeg', JPEG_QUALITY)
+  return canvas.toDataURL('image/jpeg', quality)
+}
+
+export async function uploadAvatar(_ownerId: string, file: File): Promise<string> {
+  return resizeToDataUrl(file, 128, 0.7)
+}
+
+/** Wider than an avatar (rooms show this as a banner), but still compressed —
+ * polled every few seconds via /api/rooms for every connected client. */
+export async function uploadRoomImage(file: File): Promise<string> {
+  return resizeToDataUrl(file, 480, 0.6)
 }
 
 export function dicebearAvatar(seed: string) {

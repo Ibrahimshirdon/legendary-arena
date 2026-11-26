@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Topbar } from '@/components/layout/Topbar'
 import { ChatPanel } from '@/components/shared/ChatPanel'
 import { ConfirmationDialog } from '@/components/shared/ConfirmationDialog'
+import { EditRoomModal } from '@/components/shared/EditRoomModal'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { LeaderboardTable } from '@/components/shared/LeaderboardTable'
 import { PlayerCard } from '@/components/shared/PlayerCard'
@@ -63,7 +64,12 @@ export default function RoomDetails() {
 
   return (
     <div>
-      <Topbar title={room.name} subtitle={room.description} showBack />
+      <Topbar
+        title={room.name}
+        subtitle={room.description}
+        showBack
+        actions={isManager ? <EditRoomModal room={room} /> : undefined}
+      />
 
       <div className="p-4 lg:p-8">
         <Tabs value={tab} onValueChange={setTab}>
@@ -76,6 +82,12 @@ export default function RoomDetails() {
           </TabsList>
 
           <TabsContent value="overview">
+            {room.bannerUrl && (
+              <div
+                className="mb-4 h-40 w-full rounded-2xl border border-border bg-card bg-cover bg-center sm:h-52"
+                style={{ backgroundImage: `url(${room.bannerUrl})` }}
+              />
+            )}
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-border bg-card p-5 sm:col-span-2">
                 <h3 className="font-bold">About this room</h3>

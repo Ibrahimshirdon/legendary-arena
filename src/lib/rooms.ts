@@ -33,3 +33,12 @@ export async function deleteRoom(room: Room) {
   await api.delete(`/rooms/${room.id}`)
   refetchAppStores()
 }
+
+export async function editRoom(
+  roomId: string,
+  updates: { name?: string; description?: string; bannerUrl?: string },
+) {
+  const room = await api.patch<Room>(`/rooms/${roomId}`, updates)
+  refetchAppStores()
+  return room
+}

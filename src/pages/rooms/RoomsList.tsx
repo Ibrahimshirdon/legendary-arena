@@ -114,15 +114,20 @@ export default function RoomsList() {
                 <Link
                   key={room.id}
                   to={`/rooms/${room.id}`}
-                  className="rounded-2xl border border-border bg-card p-5 transition-colors hover:border-primary/40"
+                  className="overflow-hidden rounded-2xl border border-border bg-card transition-colors hover:border-primary/40"
                 >
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold">{room.name}</h3>
-                    {room.ownerId === profile.uid && <Badge variant="secondary">Owner</Badge>}
-                  </div>
-                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{room.description}</p>
-                  <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Users className="size-3.5" /> {room.memberIds.length} members
+                  {room.bannerUrl && (
+                    <div className="h-24 w-full bg-cover bg-center" style={{ backgroundImage: `url(${room.bannerUrl})` }} />
+                  )}
+                  <div className="p-5">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-bold">{room.name}</h3>
+                      {room.ownerId === profile.uid && <Badge variant="secondary">Owner</Badge>}
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{room.description}</p>
+                    <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Users className="size-3.5" /> {room.memberIds.length} members
+                    </div>
                   </div>
                 </Link>
               ))}

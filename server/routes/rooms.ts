@@ -63,6 +63,30 @@ roomsRouter.post('/', requireAdmin, async (req, res) => {
   res.status(201).json((await serializeRooms()).find((r) => r.id === id))
 })
 
+// Room owner or admin only.
+roomsRouter.patch('/:id', async (req, res) => {
+  const roomId = req.params.id as string
+  const [room] = await db.select().from(rooms).where(eq(rooms.id, roomId)).limit(1)
+  if (!room) {
+    res.status(404).json({ error: 'Room not found' })
+    return
+  }
+  if (req.profile!.role !== 'admin' && req.profile!.id !== room.ownerId) {
+    res.status(403).json({ error: 'Only the room owner or an admin can edit this room' })
+    return
+  }
+  const { name, description, bannerUrl } = req.body as Record<string, unknown>
+  await db
+    .update(rooms)
+    .set({
+      ...(name !== undefined ? { name: name as string } : {}),
+      ...(description !== undefined ? { description: description as string } : {}),
+      ...(bannerUrl !== undefined ? { bannerUrl: bannerUrl as string } : {}),
+    })
+    .where(eq(rooms.id, roomId))
+  res.json((await serializeRooms()).find((r) => r.id === roomId))
+})
+
 roomsRouter.post('/join-by-code', requireApproved, async (req, res) => {
   const { code } = req.body as { code: string }
   const [room] = await db.select().from(rooms).where(eq(rooms.inviteCode, code.trim().toUpperCase())).limit(1)
