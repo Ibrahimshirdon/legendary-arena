@@ -1,4 +1,4 @@
-import { Check, Copy, Swords, Trash2, Trophy, Users, X } from 'lucide-react'
+import { Check, Copy, Phone, Swords, Trash2, Trophy, Users, X } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -7,6 +7,7 @@ import { ChatPanel } from '@/components/shared/ChatPanel'
 import { ConfirmationDialog } from '@/components/shared/ConfirmationDialog'
 import { EditRoomModal } from '@/components/shared/EditRoomModal'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { GroupCallPanel } from '@/components/shared/GroupCallPanel'
 import { LeaderboardTable } from '@/components/shared/LeaderboardTable'
 import { PlayerCard } from '@/components/shared/PlayerCard'
 import { TournamentCard } from '@/components/shared/TournamentCard'
@@ -91,6 +92,9 @@ export default function RoomDetails() {
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="chat">Chat</TabsTrigger>
+            <TabsTrigger value="call" className="gap-1.5">
+              <Phone className="size-3.5" /> Call
+            </TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
             <TabsTrigger value="tournaments">Tournaments</TabsTrigger>
             <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
@@ -143,6 +147,10 @@ export default function RoomDetails() {
 
           <TabsContent value="chat">
             <ChatPanel roomId={room.id} isAdmin={isManager} />
+          </TabsContent>
+
+          <TabsContent value="call">
+            <GroupCallPanel roomId={room.id} />
           </TabsContent>
 
           <TabsContent value="members">

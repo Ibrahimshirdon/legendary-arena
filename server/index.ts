@@ -4,6 +4,8 @@ import cors from 'cors'
 import express from 'express'
 import { db } from './db/client'
 import { bootstrap } from './db/schema'
+import { attachCallSignaling } from './realtime/calls'
+import { callsRouter } from './routes/calls'
 import { matchesRouter } from './routes/matches'
 import { notificationsRouter } from './routes/notifications'
 import { requestsRouter } from './routes/requests'
@@ -27,12 +29,15 @@ app.use('/api/tournament-requests', requestsRouter)
 app.use('/api/matches', matchesRouter)
 app.use('/api/trophies', trophiesRouter)
 app.use('/api/notifications', notificationsRouter)
+app.use('/api/calls', callsRouter)
 
 const port = Number(process.env.PORT ?? 8787)
 
 // Ensure the one-time admin-bootstrap row exists before accepting requests.
 await db.insert(bootstrap).values({ id: true, claimed: false }).onConflictDoNothing()
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Legendary Arena API listening on http://localhost:${port}`)
 })
+
+attachCallSignaling(server)
