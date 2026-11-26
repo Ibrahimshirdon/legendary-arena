@@ -1,4 +1,4 @@
-import { Ban, Crown, ShieldOff, UserMinus } from 'lucide-react'
+import { Ban, Crown, ShieldOff, Trash2, UserMinus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Topbar } from '@/components/layout/Topbar'
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { ConfirmationDialog } from '@/components/shared/ConfirmationDialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/context/AuthContext'
-import { setUserRole, setUserStatus } from '@/lib/admin'
+import { deleteUser, setUserRole, setUserStatus } from '@/lib/admin'
 import { usePlayersList } from '@/store/playersStore'
 import type { UserProfile } from '@/types'
 
@@ -53,7 +53,23 @@ export default function AdminUsers() {
 
 function UserRow({ player, currentUid }: { player: UserProfile; currentUid: string }) {
   const [banOpen, setBanOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const isSelf = player.uid === currentUid
+
+  async function handleDelete() {
+    try {
+      const hardDeleted = await deleteUser(player.uid)
+      toast.success(
+        hardDeleted
+          ? `${player.username} has been deleted.`
+          : `${player.username} had match/chat history, so their account was removed and scrubbed instead of fully deleted.`,
+      )
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not delete this user.')
+    } finally {
+      setDeleteOpen(false)
+    }
+  }
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
@@ -92,6 +108,12 @@ function UserRow({ player, currentUid }: { player: UserProfile; currentUid: stri
             <UserMinus className="size-4" /> Reinstate
           </Button>
         )}
+
+        {!isSelf && (
+          <Button size="sm" variant="destructive" onClick={() => setDeleteOpen(true)}>
+            <Trash2 className="size-4" /> Delete
+          </Button>
+        )}
       </div>
 
       <ConfirmationDialog
@@ -106,6 +128,16 @@ function UserRow({ player, currentUid }: { player: UserProfile; currentUid: stri
           toast.success(`${player.username} has been banned.`)
           setBanOpen(false)
         }}
+      />
+
+      <ConfirmationDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={`Delete ${player.username}?`}
+        description="This cannot be undone. If they have no match history or chat messages, their account is removed completely; otherwise it's scrubbed and banned so other players' shared records stay intact."
+        confirmLabel="Delete user"
+        variant="destructive"
+        onConfirm={() => void handleDelete()}
       />
     </div>
   )

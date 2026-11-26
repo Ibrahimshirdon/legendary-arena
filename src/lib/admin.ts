@@ -11,3 +11,9 @@ export async function setUserRole(uid: string, role: UserRole) {
   await api.patch(`/users/${uid}/role`, { role })
   void usePlayersStore.getState().refetch()
 }
+
+export async function deleteUser(uid: string) {
+  const result = await api.delete<{ hardDeleted: boolean }>(`/users/${uid}`)
+  void usePlayersStore.getState().refetch()
+  return result.hardDeleted
+}

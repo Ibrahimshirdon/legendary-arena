@@ -187,30 +187,17 @@ usersRouter.patch('/me', attachProfile, async (req, res) => {
   res.json(serializeUser(updated))
 })
 
-// Self-service account deletion. This doesn't hard-delete the row: a user's
-// matches, trophies, and chat messages are also part of *other* players'
-// shared history (opponents, teammates, standings), so wiping them would
-// corrupt everyone else's records. Instead we scrub personal info, drop
-// current memberships/registrations, and remove the Firebase Auth account
-// so they can never log back in — matches/trophies/chat stay, attributed to
-// "Deleted User".
-usersRouter.delete('/me', attachProfile, async (req, res) => {
-  if (!req.profile) {
-    res.status(404).json({ error: 'No profile yet' })
-    return
-  }
-  const uid = req.profile.id
+async function isOnlyAdmin(uid: string) {
+  const [target] = await db.select({ role: users.role }).from(users).where(eq(users.id, uid)).limit(1)
+  if (target?.role !== 'admin') return false
+  const admins = await db.select({ id: users.id }).from(users).where(eq(users.role, 'admin'))
+  return admins.length <= 1
+}
 
-  if (req.profile.role === 'admin') {
-    const admins = await db.select({ id: users.id }).from(users).where(eq(users.role, 'admin'))
-    if (admins.length <= 1) {
-      res.status(400).json({
-        error: 'You are the only admin. Promote another member to admin before deleting your account.',
-      })
-      return
-    }
-  }
-
+/** Drops current memberships/registrations (not historical), scrubs personal
+ * info, and bans the row — used whenever a user can't be hard-deleted outright
+ * because other players' shared records (chat, matches, trophies) point at them. */
+async function anonymizeUser(uid: string) {
   await db.delete(roomMembers).where(eq(roomMembers.userId, uid))
   await db.delete(roomPendingRequests).where(eq(roomPendingRequests.userId, uid))
   await db.delete(tournamentRegistrations).where(eq(tournamentRegistrations.userId, uid))
@@ -232,10 +219,72 @@ usersRouter.delete('/me', attachProfile, async (req, res) => {
       online: false,
     })
     .where(eq(users.id, uid))
+}
 
+// Self-service account deletion. This doesn't hard-delete the row: a user's
+// matches, trophies, and chat messages are also part of *other* players'
+// shared history (opponents, teammates, standings), so wiping them would
+// corrupt everyone else's records. Instead we scrub personal info, drop
+// current memberships/registrations, and remove the Firebase Auth account
+// so they can never log back in — matches/trophies/chat stay, attributed to
+// "Deleted User".
+usersRouter.delete('/me', attachProfile, async (req, res) => {
+  if (!req.profile) {
+    res.status(404).json({ error: 'No profile yet' })
+    return
+  }
+  const uid = req.profile.id
+
+  if (await isOnlyAdmin(uid)) {
+    res.status(400).json({
+      error: 'You are the only admin. Promote another member to admin before deleting your account.',
+    })
+    return
+  }
+
+  await anonymizeUser(uid)
   await adminAuth.deleteUser(uid).catch(() => {})
 
   res.status(204).end()
+})
+
+// Admin-only: removes a user entirely. Tries a real hard delete first — this
+// succeeds cleanly for accounts with no shared history (which covers almost
+// every 'unverified' signup, so they genuinely disappear from the list
+// instead of lingering). If the account has posted chat messages, created a
+// room/tournament, or won a trophy, the hard delete fails on a foreign-key
+// constraint and we fall back to the same anonymize-and-ban treatment as
+// self-deletion, which never corrupts other players' shared records.
+usersRouter.delete('/:id', attachProfile, requireAdmin, async (req, res) => {
+  const targetId = req.params.id as string
+  if (targetId === req.profile!.id) {
+    res.status(400).json({ error: 'Use Settings to delete your own account.' })
+    return
+  }
+
+  const [target] = await db.select().from(users).where(eq(users.id, targetId)).limit(1)
+  if (!target) {
+    res.status(404).json({ error: 'User not found' })
+    return
+  }
+  if (await isOnlyAdmin(targetId)) {
+    res.status(400).json({ error: 'This is the only admin. Promote someone else before deleting them.' })
+    return
+  }
+
+  // Room memberships/pending requests/tournament registrations cascade
+  // automatically if this succeeds; if it fails, anonymizeUser drops them instead.
+  let hardDeleted = true
+  try {
+    await db.delete(users).where(eq(users.id, targetId))
+  } catch {
+    hardDeleted = false
+    await anonymizeUser(targetId)
+  }
+
+  await adminAuth.deleteUser(targetId).catch(() => {})
+
+  res.json({ hardDeleted })
 })
 
 // Admin-only: approve/reject/ban members and promote/demote admins.
