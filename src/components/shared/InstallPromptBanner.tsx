@@ -1,10 +1,11 @@
-import { Download, X } from 'lucide-react'
+import { Download, Share, X } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useInstallPrompt } from '@/hooks/useInstallPrompt'
 
 const DISMISS_KEY = 'install-prompt-dismissed-at'
 const DISMISS_DAYS = 7
+const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
 
 function readDismissed() {
   try {
@@ -34,17 +35,28 @@ export function InstallPromptBanner() {
     if (accepted) setDismissed(true)
   }
 
-  if (installed || !canInstall || dismissed) return null
+  if (installed || dismissed) return null
+  // iOS Safari never fires beforeinstallprompt, so there's nothing to trigger —
+  // show manual instructions there instead of just not appearing at all.
+  if (!canInstall && !isIos) return null
 
   return (
     <div className="fixed inset-x-3 bottom-20 z-50 flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-xl lg:inset-x-auto lg:bottom-4 lg:left-4 lg:w-80">
       <div className="min-w-0 flex-1 text-sm">
         <p className="font-semibold">Install Legendary Arena</p>
-        <p className="text-xs text-muted-foreground">Add it to your home screen for one-tap access.</p>
+        {isIos ? (
+          <p className="text-xs text-muted-foreground">
+            Tap <Share className="inline size-3 align-text-bottom" /> Share, then "Add to Home Screen".
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">Add it to your home screen for one-tap access.</p>
+        )}
       </div>
-      <Button size="sm" onClick={() => void handleInstall()}>
-        <Download className="size-4" /> Install
-      </Button>
+      {!isIos && (
+        <Button size="sm" onClick={() => void handleInstall()}>
+          <Download className="size-4" /> Install
+        </Button>
+      )}
       <button onClick={dismiss} className="shrink-0 text-muted-foreground hover:text-foreground" aria-label="Dismiss">
         <X className="size-4" />
       </button>
