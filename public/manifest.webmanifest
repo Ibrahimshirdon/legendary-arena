@@ -1,0 +1,19 @@
+{
+  "name": "Legendary Arena",
+  "short_name": "Legendary Arena",
+  "description": "One community. One champion. Endless rivalries.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0d10",
+  "theme_color": "#0a0d10",
+  "icons": [
+    {
+      "src": "/logo.jpg",
+      "sizes": "375x375",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}

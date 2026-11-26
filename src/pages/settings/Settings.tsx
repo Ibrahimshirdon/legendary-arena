@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { Topbar } from '@/components/layout/Topbar'
 import { AvatarPicker } from '@/components/shared/AvatarPicker'
 import { ConfirmationDialog } from '@/components/shared/ConfirmationDialog'
+import { InstallAppCard } from '@/components/shared/InstallAppCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -90,6 +91,8 @@ export default function Settings() {
     <div>
       <Topbar title="Settings" subtitle="Manage your profile and account." />
       <div className="max-w-2xl space-y-6 p-4 lg:p-8">
+        <InstallAppCard />
+
         <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
           <h3 className="font-bold">Profile</h3>
           <AvatarPicker seedBase={profile.username} value={avatarUrl} onChange={setAvatarUrl} onFileSelected={setAvatarFile} />
