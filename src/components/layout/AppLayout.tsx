@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { Sidebar } from '@/components/layout/Sidebar'
+import { InstallPromptBanner } from '@/components/shared/InstallPromptBanner'
 import { usePlayersStore } from '@/store/playersStore'
 import { startAppStores, stopAppStores } from '@/store/appStores'
 
@@ -25,6 +26,7 @@ export function AppLayout() {
         <Outlet />
       </main>
       <MobileNav />
+      <InstallPromptBanner />
     </div>
   )
 }
