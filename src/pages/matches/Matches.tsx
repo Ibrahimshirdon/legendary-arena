@@ -38,7 +38,7 @@ export default function Matches() {
 
   return (
     <div>
-      <Topbar title="Matches" subtitle="Every fixture across your tournaments, in one place." />
+      <Topbar title="Matches" subtitle="Every tournament fixture and friendly challenge, in one place." />
       <div className="p-4 lg:p-8">
         <Tabs value={filter} onValueChange={setFilter}>
           <TabsList className="mb-4 flex-wrap">

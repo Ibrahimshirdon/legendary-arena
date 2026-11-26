@@ -159,9 +159,11 @@ export const tournamentRequests = pgTable('tournament_requests', {
 })
 
 // Player columns are plain text (not FK) so a 'BYE' sentinel can be stored.
+// tournamentId is nullable: a standalone friendly challenge between two room
+// members has no tournament at all.
 export const matches = pgTable('matches', {
   id: text('id').primaryKey(),
-  tournamentId: text('tournament_id').notNull().references(() => tournaments.id, { onDelete: 'cascade' }),
+  tournamentId: text('tournament_id').references(() => tournaments.id, { onDelete: 'cascade' }),
   roomId: text('room_id').notNull().references(() => rooms.id, { onDelete: 'cascade' }),
   round: text('round').notNull(),
   roundOrder: integer('round_order').notNull(),

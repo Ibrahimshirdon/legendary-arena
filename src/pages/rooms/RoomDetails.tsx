@@ -1,4 +1,4 @@
-import { Check, Copy, Trash2, Trophy, Users, X } from 'lucide-react'
+import { Check, Copy, Swords, Trash2, Trophy, Users, X } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -14,9 +14,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/context/AuthContext'
+import { createFriendlyMatch } from '@/lib/matches'
 import { approveJoinRequest, deleteRoom, rejectJoinRequest } from '@/lib/rooms'
 import { useRoomsStore, useTournamentsStore } from '@/store/appStores'
 import { usePlayersList } from '@/store/playersStore'
+import type { UserProfile } from '@/types'
 
 export default function RoomDetails() {
   const { roomId } = useParams<{ roomId: string }>()
@@ -156,13 +158,16 @@ export default function RoomDetails() {
                 <h3 className="font-bold">Members ({members.length})</h3>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {members.map((p) => (
-                    <div key={p.uid} className="relative">
-                      <PlayerCard player={p} />
+                    <div key={p.uid} className="relative flex items-center gap-2">
+                      <div className="min-w-0 flex-1">
+                        <PlayerCard player={p} />
+                      </div>
                       {p.uid === room.ownerId && (
                         <Badge variant="secondary" className="absolute -top-2 right-2">
                           Owner
                         </Badge>
                       )}
+                      {p.uid !== profile.uid && <ChallengeButton roomId={room.id} opponent={p} />}
                     </div>
                   ))}
                 </div>
@@ -198,5 +203,41 @@ export default function RoomDetails() {
         onConfirm={handleDelete}
       />
     </div>
+  )
+}
+
+function ChallengeButton({ roomId, opponent }: { roomId: string; opponent: UserProfile }) {
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+  const [sending, setSending] = useState(false)
+
+  async function handleChallenge() {
+    setSending(true)
+    try {
+      await createFriendlyMatch(roomId, opponent.uid)
+      toast.success(`Challenge sent to ${opponent.username}!`)
+      setOpen(false)
+      navigate('/matches')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not create that match.')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <>
+      <Button size="icon" variant="outline" className="shrink-0" onClick={() => setOpen(true)} title="Challenge to a friendly match">
+        <Swords className="size-4" />
+      </Button>
+      <ConfirmationDialog
+        open={open}
+        onOpenChange={setOpen}
+        title={`Challenge ${opponent.username}?`}
+        description="Starts a friendly 1v1 match between you two. No tournament needed — once you both submit matching scores, it counts toward your stats like any other match."
+        confirmLabel={sending ? 'Sending…' : 'Send Challenge'}
+        onConfirm={handleChallenge}
+      />
+    </>
   )
 }

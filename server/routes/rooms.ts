@@ -166,7 +166,7 @@ roomsRouter.delete('/:id', requireAdmin, async (req, res) => {
   }
 
   const roomMatches = await db.select().from(matches).where(eq(matches.roomId, roomId))
-  const pointSystemCache = new Map<string, { win: number; draw: number; loss: number }>()
+  const pointSystemCache = new Map<string | null, { win: number; draw: number; loss: number }>()
   for (const m of roomMatches) {
     if (m.status !== 'completed' || m.score1 === null || m.score2 === null) continue
     if (m.player1Id === BYE || m.player2Id === BYE) continue

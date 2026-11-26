@@ -1,5 +1,12 @@
 import { api } from '@/lib/api'
 import { refetchAppStores } from '@/store/appStores'
+import type { Match } from '@/types'
+
+export async function createFriendlyMatch(roomId: string, opponentId: string) {
+  const match = await api.post<Match>('/matches/friendly', { roomId, opponentId })
+  refetchAppStores()
+  return match
+}
 
 export async function submitMatchResult(matchId: string, _uid: string, score1: number, score2: number) {
   const { status } = await api.post<{ status: 'completed' | 'disputed' | 'awaiting_result' }>(

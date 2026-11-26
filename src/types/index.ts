@@ -149,7 +149,8 @@ export interface MatchResultSubmission {
 
 export interface Match {
   id: string
-  tournamentId: string
+  /** Null for a standalone friendly challenge between two room members — no tournament involved. */
+  tournamentId: string | null
   roomId: string
   round: string
   roundOrder: number

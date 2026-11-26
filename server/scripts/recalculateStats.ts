@@ -43,7 +43,7 @@ async function main() {
     db.select().from(tournamentParticipants),
   ])
 
-  const pointSystemByTournament = new Map(
+  const pointSystemByTournament = new Map<string | null, { win: number; draw: number; loss: number }>(
     allTournaments.map((t) => [t.id, { win: t.pointWin, draw: t.pointDraw, loss: t.pointLoss }]),
   )
 

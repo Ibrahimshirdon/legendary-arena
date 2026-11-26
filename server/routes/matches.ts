@@ -1,7 +1,8 @@
+import crypto from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { Router } from 'express'
 import { db } from '../db/client'
-import { matches, tournaments } from '../db/schema'
+import { matches, roomMembers, tournaments } from '../db/schema'
 import { BYE } from '../lib/fixtures'
 import { requireAuth } from '../middleware/auth'
 import { attachProfile, requireAdmin } from '../middleware/roles'
@@ -43,14 +44,68 @@ matchesRouter.get('/', async (_req, res) => {
   res.json(rows.map(serializeMatch))
 })
 
+// Any member can challenge any other member of the same room to a quick 1v1 —
+// no tournament, no admin approval. Counts toward stats like any other match
+// once both players submit matching scores.
+matchesRouter.post('/friendly', async (req, res) => {
+  const { roomId, opponentId } = req.body as { roomId: string; opponentId: string }
+  if (!roomId || !opponentId) {
+    res.status(400).json({ error: 'roomId and opponentId are required' })
+    return
+  }
+  if (opponentId === req.uid) {
+    res.status(400).json({ error: "You can't challenge yourself." })
+    return
+  }
+
+  const members = await db.select().from(roomMembers).where(eq(roomMembers.roomId, roomId))
+  const memberIds = new Set(members.map((m) => m.userId))
+  if (!memberIds.has(req.uid!) || !memberIds.has(opponentId)) {
+    res.status(403).json({ error: 'Both players must be members of this room.' })
+    return
+  }
+
+  const id = crypto.randomUUID()
+  await db.insert(matches).values({
+    id,
+    tournamentId: null,
+    roomId,
+    round: 'Friendly Match',
+    roundOrder: 0,
+    player1Id: req.uid!,
+    player2Id: opponentId,
+    status: 'upcoming',
+    scheduledAt: Date.now(),
+    isDraw: false,
+    createdAt: Date.now(),
+  })
+
+  await notify(opponentId, {
+    type: 'match_scheduled',
+    title: 'Friendly match challenge',
+    message: `${req.profile!.username} challenged you to a friendly match!`,
+    link: '/matches',
+  })
+
+  const [created] = await db.select().from(matches).where(eq(matches.id, id)).limit(1)
+  res.status(201).json(serializeMatch(created))
+})
+
 function resultFor(score1: number, score2: number, player1Id: string, player2Id: string) {
   if (score1 === score2) return { winnerId: null as string | null, isDraw: true }
   return { winnerId: score1 > score2 ? player1Id : player2Id, isDraw: false }
 }
 
-export async function pointSystemFor(tournamentId: string) {
+const DEFAULT_POINT_SYSTEM = { win: 3, draw: 1, loss: 0 }
+
+export async function pointSystemFor(tournamentId: string | null) {
+  if (!tournamentId) return DEFAULT_POINT_SYSTEM
   const [t] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId)).limit(1)
   return { win: t?.pointWin ?? 3, draw: t?.pointDraw ?? 1, loss: t?.pointLoss ?? 0 }
+}
+
+function matchLink(tournamentId: string | null) {
+  return tournamentId ? `/tournaments/${tournamentId}` : '/matches'
 }
 
 export function statsDeltaFor(
@@ -147,7 +202,7 @@ matchesRouter.post('/:id/submit-result', async (req, res) => {
             type: 'result_confirmed',
             title: 'Result confirmed',
             message: `Final score: ${match.round} confirmed.`,
-            link: `/tournaments/${match.tournamentId}`,
+            link: matchLink(match.tournamentId),
           }),
         ),
       )
@@ -174,7 +229,7 @@ matchesRouter.post('/:id/submit-result', async (req, res) => {
           type: 'result_submitted',
           title: 'Match disputed',
           message: 'Submitted scores do not match. An admin will review this match.',
-          link: `/tournaments/${match.tournamentId}`,
+          link: matchLink(match.tournamentId),
         }),
       ),
     )
@@ -197,7 +252,7 @@ matchesRouter.post('/:id/submit-result', async (req, res) => {
       type: 'result_submitted',
       title: 'Score submitted',
       message: 'Your opponent submitted a result. Confirm or submit your own score.',
-      link: `/tournaments/${match.tournamentId}`,
+      link: matchLink(match.tournamentId),
     })
   }
   res.json({ status: 'awaiting_result' })
@@ -232,7 +287,7 @@ matchesRouter.post('/:id/admin-resolve', requireAdmin, async (req, res) => {
         type: 'result_confirmed',
         title: 'Match resolved by admin',
         message: `Final score set to ${score1} - ${score2}.`,
-        link: `/tournaments/${match.tournamentId}`,
+        link: matchLink(match.tournamentId),
       }),
     ),
   )
