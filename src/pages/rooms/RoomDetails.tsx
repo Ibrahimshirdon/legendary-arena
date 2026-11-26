@@ -63,7 +63,7 @@ export default function RoomDetails() {
 
   return (
     <div>
-      <Topbar title={room.name} subtitle={room.description} />
+      <Topbar title={room.name} subtitle={room.description} showBack />
 
       <div className="p-4 lg:p-8">
         <Tabs value={tab} onValueChange={setTab}>

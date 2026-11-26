@@ -1,4 +1,4 @@
-import { Bell, LogOut, Settings, ShieldCheck, User as UserIcon } from 'lucide-react'
+import { ArrowLeft, Bell, LogOut, Settings, ShieldCheck, User as UserIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PlayerAvatar } from '@/components/shared/PlayerAvatar'
@@ -14,16 +14,39 @@ import {
 import { useAuth } from '@/context/AuthContext'
 import { useNotifications } from '@/hooks/useNotifications'
 
-export function Topbar({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
+export function Topbar({
+  title,
+  subtitle,
+  actions,
+  showBack,
+}: {
+  title: string
+  subtitle?: string
+  actions?: ReactNode
+  showBack?: boolean
+}) {
   const { profile, logout } = useAuth()
   const { unreadCount } = useNotifications(profile?.uid)
   const navigate = useNavigate()
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/80 px-4 py-3.5 backdrop-blur lg:px-8">
-      <div className="min-w-0">
-        <h1 className="truncate text-lg font-bold tracking-tight lg:text-xl">{title}</h1>
-        {subtitle && <p className="truncate text-xs text-muted-foreground lg:text-sm">{subtitle}</p>}
+      <div className="flex min-w-0 items-center gap-2">
+        {showBack && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="-ml-2 shrink-0"
+            onClick={() => navigate(-1)}
+            aria-label="Go back"
+          >
+            <ArrowLeft className="size-5" />
+          </Button>
+        )}
+        <div className="min-w-0">
+          <h1 className="truncate text-lg font-bold tracking-tight lg:text-xl">{title}</h1>
+          {subtitle && <p className="truncate text-xs text-muted-foreground lg:text-sm">{subtitle}</p>}
+        </div>
       </div>
 
       <div className="flex items-center gap-2">

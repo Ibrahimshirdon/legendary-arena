@@ -46,7 +46,7 @@ export default function PlayerProfile() {
 
   return (
     <div>
-      <Topbar title={player.username} subtitle={player.fullName} />
+      <Topbar title={player.username} subtitle={player.fullName} showBack />
 
       <div className="space-y-6 p-4 lg:p-8">
         <div className="overflow-hidden rounded-2xl border border-border bg-card">

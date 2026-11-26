@@ -73,6 +73,7 @@ export default function TournamentDetails() {
       <Topbar
         title={tournament.name}
         subtitle={`${formatLabel[tournament.format]} · ${formatDate(tournament.startDate)}`}
+        showBack
         actions={
           <div className="flex items-center gap-2">
             {canRegister && <Button size="sm" onClick={() => void handleRegister()}>Join Tournament</Button>}
