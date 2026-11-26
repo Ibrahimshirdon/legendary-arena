@@ -6,8 +6,14 @@ export async function sendMessage(
   text: string,
   replyToId?: string | null,
   isAnnouncement = false,
+  imageUrl?: string | null,
 ) {
-  await api.post(`/rooms/${roomId}/messages`, { text, replyToId: replyToId ?? null, isAnnouncement })
+  await api.post(`/rooms/${roomId}/messages`, {
+    text,
+    imageUrl: imageUrl ?? null,
+    replyToId: replyToId ?? null,
+    isAnnouncement,
+  })
 }
 
 export async function toggleReaction(

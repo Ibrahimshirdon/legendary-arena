@@ -1,5 +1,6 @@
-import { Megaphone, Send } from 'lucide-react'
+import { ImagePlus, Loader2, Megaphone, Send, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { MessageBubble } from '@/components/shared/MessageBubble'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -7,23 +8,49 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/context/AuthContext'
 import { useRoomMessages } from '@/hooks/useRoomMessages'
 import { sendMessage } from '@/lib/chat'
+import { uploadChatImage } from '@/lib/storage'
 
 export function ChatPanel({ roomId, isAdmin }: { roomId: string; isAdmin: boolean }) {
   const { profile } = useAuth()
   const { messages, loading } = useRoomMessages(roomId)
   const [text, setText] = useState('')
   const [asAnnouncement, setAsAnnouncement] = useState(false)
+  const [pendingImage, setPendingImage] = useState<string | null>(null)
+  const [processingImage, setProcessingImage] = useState(false)
+  const [sending, setSending] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [messages.length])
 
+  async function handlePickImage(file: File | undefined) {
+    if (!file) return
+    setProcessingImage(true)
+    try {
+      setPendingImage(await uploadChatImage(file))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not process that image.')
+    } finally {
+      setProcessingImage(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   async function handleSend() {
-    if (!text.trim() || !profile) return
-    await sendMessage(roomId, profile.uid, text.trim(), null, asAnnouncement)
-    setText('')
-    setAsAnnouncement(false)
+    if ((!text.trim() && !pendingImage) || !profile) return
+    setSending(true)
+    try {
+      await sendMessage(roomId, profile.uid, text.trim(), null, asAnnouncement, pendingImage)
+      setText('')
+      setPendingImage(null)
+      setAsAnnouncement(false)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not send message.')
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -41,6 +68,22 @@ export function ChatPanel({ roomId, isAdmin }: { roomId: string; isAdmin: boolea
         ))}
       </div>
 
+      {pendingImage && (
+        <div className="flex items-center gap-2 border-t border-border px-3 pt-3">
+          <div className="relative">
+            <img src={pendingImage} alt="To send" className="h-16 w-16 rounded-lg object-cover" />
+            <button
+              type="button"
+              onClick={() => setPendingImage(null)}
+              className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
+            >
+              <X className="size-3" />
+            </button>
+          </div>
+          <span className="text-xs text-muted-foreground">Image ready to send</span>
+        </div>
+      )}
+
       <div className="flex items-center gap-2 border-t border-border p-3">
         {isAdmin && (
           <button
@@ -54,6 +97,24 @@ export function ChatPanel({ roomId, isAdmin }: { roomId: string; isAdmin: boolea
             <Megaphone className="size-4" />
           </button>
         )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => void handlePickImage(e.target.files?.[0])}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={processingImage}
+          className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground transition-colors hover:text-primary disabled:opacity-50"
+          title="Attach an image"
+        >
+          {processingImage ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
+        </button>
+
         <Input
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -62,7 +123,7 @@ export function ChatPanel({ roomId, isAdmin }: { roomId: string; isAdmin: boolea
           }}
           placeholder={asAnnouncement ? 'Write an announcement…' : 'Type a message…'}
         />
-        <Button size="icon" onClick={() => void handleSend()} disabled={!text.trim()}>
+        <Button size="icon" onClick={() => void handleSend()} disabled={sending || (!text.trim() && !pendingImage)}>
           <Send className="size-4" />
         </Button>
       </div>

@@ -35,6 +35,12 @@ export async function uploadRoomImage(file: File): Promise<string> {
   return resizeToDataUrl(file, 480, 0.6)
 }
 
+/** Chat messages poll every 3s and the endpoint returns the last 200 of them,
+ * images included — kept small and compressed so that stays affordable. */
+export async function uploadChatImage(file: File): Promise<string> {
+  return resizeToDataUrl(file, 560, 0.45)
+}
+
 export function dicebearAvatar(seed: string) {
   return `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(seed)}&backgroundColor=14191f`
 }

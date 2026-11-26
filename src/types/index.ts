@@ -75,6 +75,7 @@ export interface ChatMessage {
   roomId: string
   senderId: string
   text: string
+  imageUrl?: string | null
   replyToId?: string | null
   reactions: MessageReaction
   isAnnouncement: boolean

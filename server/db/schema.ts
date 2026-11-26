@@ -75,6 +75,7 @@ export const messages = pgTable('messages', {
   roomId: text('room_id').notNull().references(() => rooms.id, { onDelete: 'cascade' }),
   senderId: text('sender_id').notNull().references(() => users.id),
   text: text('text').notNull().default(''),
+  imageUrl: text('image_url'),
   replyToId: text('reply_to_id'),
   isAnnouncement: boolean('is_announcement').notNull().default(false),
   deleted: boolean('deleted').notNull().default(false),

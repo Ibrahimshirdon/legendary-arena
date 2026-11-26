@@ -1,6 +1,7 @@
 import { Megaphone, Smile, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { PlayerAvatar } from '@/components/shared/PlayerAvatar'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useAuth } from '@/context/AuthContext'
 import { deleteMessage, toggleReaction } from '@/lib/chat'
 import { cn, formatTime } from '@/lib/utils'
@@ -21,6 +22,7 @@ export function MessageBubble({
   const { profile } = useAuth()
   const sender = usePlayer(message.senderId)
   const [showPicker, setShowPicker] = useState(false)
+  const [viewerOpen, setViewerOpen] = useState(false)
   const isMe = profile?.uid === message.senderId
   const canDelete = isMe || isAdmin
 
@@ -38,26 +40,38 @@ export function MessageBubble({
         <div className="group relative inline-block">
           <div
             className={cn(
-              'rounded-2xl px-4 py-2.5 text-sm',
+              'space-y-2 rounded-2xl px-4 py-2.5 text-sm',
               message.isAnnouncement
                 ? 'border border-secondary/30 bg-secondary/10 text-secondary-foreground'
                 : isMe
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-foreground',
+              message.imageUrl && !message.deleted && 'p-1.5',
             )}
           >
             {message.isAnnouncement && (
-              <div className="mb-1 flex items-center gap-1.5 text-xs font-bold text-secondary">
+              <div className="flex items-center gap-1.5 px-2.5 pt-1.5 text-xs font-bold text-secondary">
                 <Megaphone className="size-3.5" /> Announcement
               </div>
             )}
-            {message.deleted ? <span className="italic opacity-60">Message deleted</span> : message.text}
+            {message.deleted ? (
+              <span className="italic opacity-60">Message deleted</span>
+            ) : (
+              <>
+                {message.imageUrl && (
+                  <button type="button" onClick={() => setViewerOpen(true)} className="block overflow-hidden rounded-xl">
+                    <img src={message.imageUrl} alt="Shared" className="max-h-64 w-auto max-w-full object-cover" />
+                  </button>
+                )}
+                {message.text && <p className={cn(message.imageUrl && 'px-2.5 pb-1.5')}>{message.text}</p>}
+              </>
+            )}
           </div>
 
           {!message.deleted && (
             <div
               className={cn(
-                'absolute -bottom-3 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100',
+                'absolute -bottom-3 flex items-center gap-1 opacity-70 transition-opacity hover:opacity-100 group-hover:opacity-100',
                 isMe ? 'right-0' : 'left-0',
               )}
             >
@@ -103,7 +117,7 @@ export function MessageBubble({
         </div>
 
         {Object.entries(message.reactions).some(([, uids]) => uids.length > 0) && (
-          <div className={cn('flex gap-1', isMe && 'justify-end')}>
+          <div className={cn('flex flex-wrap gap-1', isMe && 'justify-end')}>
             {Object.entries(message.reactions)
               .filter(([, uids]) => uids.length > 0)
               .map(([emoji, uids]) => {
@@ -124,6 +138,15 @@ export function MessageBubble({
           </div>
         )}
       </div>
+
+      {message.imageUrl && (
+        <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
+          <DialogContent className="max-w-2xl overflow-visible border-none bg-transparent p-0 shadow-none">
+            <DialogTitle className="sr-only">Shared image</DialogTitle>
+            <img src={message.imageUrl} alt="Shared" className="mx-auto max-h-[80vh] w-auto max-w-full rounded-2xl" />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

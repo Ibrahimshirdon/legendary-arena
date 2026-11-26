@@ -29,10 +29,15 @@ messagesRouter.get('/', async (req, res) => {
 
 messagesRouter.post('/', requireApproved, async (req, res) => {
   const roomId = (req.params as Record<string, string>).roomId
-  const { text, isAnnouncement, replyToId } = req.body as {
+  const { text, imageUrl, isAnnouncement, replyToId } = req.body as {
     text: string
+    imageUrl?: string | null
     isAnnouncement?: boolean
     replyToId?: string | null
+  }
+  if (!text.trim() && !imageUrl) {
+    res.status(400).json({ error: 'Message needs text or an image' })
+    return
   }
   if (isAnnouncement && req.profile!.role !== 'admin') {
     res.status(403).json({ error: 'Only admins can send announcements' })
@@ -44,6 +49,7 @@ messagesRouter.post('/', requireApproved, async (req, res) => {
     roomId,
     senderId: req.uid!,
     text,
+    imageUrl: imageUrl ?? null,
     replyToId: replyToId ?? null,
     isAnnouncement: Boolean(isAnnouncement),
     deleted: false,
@@ -63,7 +69,7 @@ messagesRouter.patch('/:messageId/delete', async (req, res) => {
     res.status(403).json({ error: 'Not allowed' })
     return
   }
-  await db.update(messages).set({ deleted: true, text: '' }).where(eq(messages.id, messageId))
+  await db.update(messages).set({ deleted: true, text: '', imageUrl: null }).where(eq(messages.id, messageId))
   res.status(204).end()
 })
 
