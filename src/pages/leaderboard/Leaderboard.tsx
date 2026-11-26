@@ -44,10 +44,10 @@ function Podium({ players }: { players: UserProfile[] }) {
   const [first, second, third] = players
   if (!first) return null
   return (
-    <div className="flex items-end justify-center gap-3 rounded-2xl border border-border bg-card p-6 pitch-pattern">
-      {second && <PodiumSlot player={second} place={2} height="h-24" />}
-      <PodiumSlot player={first} place={1} height="h-32" />
-      {third && <PodiumSlot player={third} place={3} height="h-16" />}
+    <div className="flex items-end justify-center gap-2 rounded-2xl border border-border bg-card p-4 pitch-pattern sm:gap-3 sm:p-6">
+      {second && <PodiumSlot player={second} place={2} height="h-20 sm:h-24" />}
+      <PodiumSlot player={first} place={1} height="h-28 sm:h-32" />
+      {third && <PodiumSlot player={third} place={3} height="h-14 sm:h-16" />}
     </div>
   )
 }
@@ -55,8 +55,8 @@ function Podium({ players }: { players: UserProfile[] }) {
 function PodiumSlot({ player, place, height }: { player: UserProfile; place: 1 | 2 | 3; height: string }) {
   const color = place === 1 ? 'bg-secondary text-secondary-foreground' : place === 2 ? 'bg-muted-foreground/40 text-foreground' : 'bg-amber-800/40 text-foreground'
   return (
-    <div className="flex w-24 flex-col items-center gap-2">
-      <PlayerAvatar src={player.avatarUrl} name={player.username} size={place === 1 ? 'xl' : 'lg'} ring={place === 1} />
+    <div className="flex w-20 shrink-0 flex-col items-center gap-2 sm:w-24">
+      <PlayerAvatar src={player.avatarUrl} name={player.username} size={place === 1 ? 'lg' : 'md'} ring={place === 1} />
       <p className="truncate text-sm font-bold">{player.username}</p>
       <p className="text-xs text-muted-foreground">{player.stats.points} pts</p>
       <div className={`flex w-full ${height} items-start justify-center rounded-t-lg pt-1.5 text-lg font-black ${color}`}>

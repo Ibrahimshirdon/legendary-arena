@@ -90,7 +90,7 @@ export default function RoomsList() {
         title="Community Rooms"
         subtitle="Your crews, chats, and tournaments live here."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <JoinByCodeDialog />
             {profile.role === 'admin' && <CreateRoomModal />}
           </div>

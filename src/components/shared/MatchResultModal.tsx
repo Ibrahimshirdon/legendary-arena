@@ -76,13 +76,13 @@ export function MatchResultModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-center justify-between gap-4 py-4">
+        <div className="flex flex-col items-center gap-4 py-4 sm:flex-row sm:justify-between">
           <div className="flex flex-1 flex-col items-center gap-2">
             <PlayerAvatar src={player1?.avatarUrl} name={player1?.username ?? 'Player 1'} size="lg" />
             <span className="text-sm font-semibold">{player1?.username}</span>
             <ScoreStepper label="Score" value={score1} onChange={setScore1} />
           </div>
-          <span className="pt-8 text-xl font-black text-muted-foreground">VS</span>
+          <span className="text-xl font-black text-muted-foreground sm:pt-8">VS</span>
           <div className="flex flex-1 flex-col items-center gap-2">
             <PlayerAvatar src={player2?.avatarUrl} name={player2?.username ?? 'Player 2'} size="lg" />
             <span className="text-sm font-semibold">{player2?.username}</span>

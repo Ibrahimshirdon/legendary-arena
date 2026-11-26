@@ -30,7 +30,7 @@ export function Topbar({
   const navigate = useNavigate()
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/80 px-4 py-3.5 backdrop-blur lg:px-8">
+    <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background/80 px-4 py-3.5 backdrop-blur lg:px-8">
       <div className="flex min-w-0 items-center gap-2">
         {showBack && (
           <Button
@@ -49,7 +49,7 @@ export function Topbar({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         {actions}
 
         <Button variant="ghost" size="icon" className="relative" onClick={() => navigate('/notifications')}>

@@ -89,7 +89,7 @@ export default function TournamentDetails() {
         subtitle={`${formatLabel[tournament.format]} · ${formatDate(tournament.startDate)}`}
         showBack
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {canRegister && <Button size="sm" onClick={() => void handleRegister()}>Join Tournament</Button>}
             {isRegistered && tournament.status === 'registration_open' && (
               <Button size="sm" variant="outline" onClick={() => void cancelRegistration(tournament, profile.uid)}>
