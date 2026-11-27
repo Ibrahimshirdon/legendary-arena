@@ -32,6 +32,7 @@ export function MessageBubble({
   const isMe = profile?.uid === message.senderId
   const canDelete = isMe || isAdmin
   const reactionEntries = Object.entries(message.reactions).filter(([, uids]) => uids.length > 0)
+  const myReaction = profile ? reactionEntries.find(([, uids]) => uids.includes(profile.uid))?.[0] : undefined
   const namesFor = (uids: string[]) => uids.map((uid) => players[uid]?.username ?? 'Member').join(', ')
   const time = formatTime(message.createdAt)
   const imageOnly = message.imageUrl && !message.text
@@ -127,19 +128,22 @@ export function MessageBubble({
                 isMe ? 'right-0' : 'left-0',
               )}
             >
-              {QUICK_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => {
-                    const active = message.reactions[emoji]?.includes(profile.uid) ?? false
-                    void toggleReaction(roomId, message.id, emoji, profile.uid, active)
-                    setShowPicker(false)
-                  }}
-                  className="rounded-lg p-1.5 text-base hover:bg-accent"
-                >
-                  {emoji}
-                </button>
-              ))}
+              {QUICK_EMOJIS.map((emoji) => {
+                const active = message.reactions[emoji]?.includes(profile.uid) ?? false
+                return (
+                  <button
+                    key={emoji}
+                    onClick={() => {
+                      void toggleReaction(roomId, message.id, emoji, profile.uid, active)
+                      setShowPicker(false)
+                    }}
+                    title={active ? 'Remove your reaction' : myReaction ? `Switch from ${myReaction}` : undefined}
+                    className={cn('rounded-lg p-1.5 text-base hover:bg-accent', active && 'bg-primary/15 ring-1 ring-primary/40')}
+                  >
+                    {emoji}
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>

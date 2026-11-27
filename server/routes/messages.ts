@@ -73,32 +73,22 @@ messagesRouter.patch('/:messageId/delete', async (req, res) => {
   res.status(204).end()
 })
 
+// One reaction per user per message — picking a new emoji swaps out
+// whichever one they already had; picking the same one again removes it.
 messagesRouter.post('/:messageId/reactions', requireApproved, async (req, res) => {
   const messageId = req.params.messageId as string
   const { emoji } = req.body as { emoji: string }
   const existing = await db
     .select()
     .from(messageReactions)
-    .where(
-      and(
-        eq(messageReactions.messageId, messageId),
-        eq(messageReactions.emoji, emoji),
-        eq(messageReactions.userId, req.uid!),
-      ),
-    )
-    .limit(1)
+    .where(and(eq(messageReactions.messageId, messageId), eq(messageReactions.userId, req.uid!)))
 
-  if (existing.length > 0) {
-    await db
-      .delete(messageReactions)
-      .where(
-        and(
-          eq(messageReactions.messageId, messageId),
-          eq(messageReactions.emoji, emoji),
-          eq(messageReactions.userId, req.uid!),
-        ),
-      )
-  } else {
+  await db
+    .delete(messageReactions)
+    .where(and(eq(messageReactions.messageId, messageId), eq(messageReactions.userId, req.uid!)))
+
+  const alreadyHadThisEmoji = existing.some((r) => r.emoji === emoji)
+  if (!alreadyHadThisEmoji) {
     await db.insert(messageReactions).values({ messageId, emoji, userId: req.uid! })
   }
   res.status(204).end()
