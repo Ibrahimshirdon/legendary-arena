@@ -9,9 +9,14 @@ export function PushNotificationsCard() {
   if (permission === 'unsupported') return null
 
   async function handleEnable() {
-    const granted = await enable()
-    if (granted) toast.success("Notifications are on — you'll get alerts even when the app is closed.")
-    else toast.error('Notifications were not enabled.')
+    try {
+      const granted = await enable()
+      if (granted) toast.success("Notifications are on — you'll get alerts even when the app is closed.")
+      else toast.error("Notifications weren't enabled. Check your browser's site settings for this page.")
+    } catch (err) {
+      console.error('Push notification setup failed:', err)
+      toast.error(err instanceof Error ? err.message : 'Could not enable notifications.')
+    }
   }
 
   return (
