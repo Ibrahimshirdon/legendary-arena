@@ -38,6 +38,19 @@ export function formatTime(ms: number) {
   })
 }
 
+export function isSameDay(a: number, b: number) {
+  const da = new Date(a)
+  const db = new Date(b)
+  return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate()
+}
+
+export function dayLabel(ms: number) {
+  const now = Date.now()
+  if (isSameDay(ms, now)) return 'Today'
+  if (isSameDay(ms, now - 24 * 60 * 60 * 1000)) return 'Yesterday'
+  return formatDate(ms)
+}
+
 export function timeAgo(ms: number) {
   const diff = Date.now() - ms
   const seconds = Math.floor(diff / 1000)

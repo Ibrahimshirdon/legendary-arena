@@ -14,10 +14,14 @@ export function MessageBubble({
   message,
   roomId,
   isAdmin,
+  showMeta = true,
 }: {
   message: ChatMessage
   roomId: string
   isAdmin: boolean
+  /** False for messages right after one from the same sender — WhatsApp-style
+   * grouping: no repeated avatar/name, just a tighter stack of bubbles. */
+  showMeta?: boolean
 }) {
   const { profile } = useAuth()
   const sender = usePlayer(message.senderId)
@@ -29,32 +33,35 @@ export function MessageBubble({
   const canDelete = isMe || isAdmin
   const reactionEntries = Object.entries(message.reactions).filter(([, uids]) => uids.length > 0)
   const namesFor = (uids: string[]) => uids.map((uid) => players[uid]?.username ?? 'Member').join(', ')
+  const time = formatTime(message.createdAt)
+  const imageOnly = message.imageUrl && !message.text
 
   if (!profile) return null
 
   return (
-    <div className={cn('flex gap-2.5', isMe && 'flex-row-reverse')}>
-      <PlayerAvatar src={sender?.avatarUrl} name={sender?.username ?? '—'} size="sm" />
+    <div className={cn('flex gap-2.5', isMe && 'flex-row-reverse', !showMeta && 'mt-0.5')}>
+      <div className="w-8 shrink-0">
+        {showMeta && <PlayerAvatar src={sender?.avatarUrl} name={sender?.username ?? '—'} size="sm" />}
+      </div>
       <div className={cn('max-w-[75%] space-y-1', isMe && 'items-end text-right')}>
-        <div className="flex items-center gap-2">
+        {showMeta && !isMe && (
           <span className="text-xs font-semibold text-muted-foreground">{sender?.username ?? 'Member'}</span>
-          <span className="text-[11px] text-muted-foreground">{formatTime(message.createdAt)}</span>
-        </div>
+        )}
 
         <div className="group relative inline-block">
           <div
             className={cn(
-              'space-y-2 rounded-2xl px-4 py-2.5 text-sm',
+              'relative space-y-1 rounded-2xl px-3 py-2 text-sm shadow-sm',
               message.isAnnouncement
                 ? 'border border-secondary/30 bg-secondary/10 text-secondary-foreground'
                 : isMe
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-foreground',
+                  ? 'rounded-tr-sm bg-primary text-primary-foreground'
+                  : 'rounded-tl-sm bg-muted text-foreground',
               message.imageUrl && !message.deleted && 'p-1.5',
             )}
           >
             {message.isAnnouncement && (
-              <div className="flex items-center gap-1.5 px-2.5 pt-1.5 text-xs font-bold text-secondary">
+              <div className="flex items-center gap-1.5 px-1.5 pt-1 text-xs font-bold text-secondary">
                 <Megaphone className="size-3.5" /> Announcement
               </div>
             )}
@@ -63,11 +70,28 @@ export function MessageBubble({
             ) : (
               <>
                 {message.imageUrl && (
-                  <button type="button" onClick={() => setViewerOpen(true)} className="block overflow-hidden rounded-xl">
+                  <button type="button" onClick={() => setViewerOpen(true)} className="relative block overflow-hidden rounded-xl">
                     <img src={message.imageUrl} alt="Shared" className="max-h-64 w-auto max-w-full object-cover" />
+                    {imageOnly && (
+                      <span className="absolute bottom-1.5 right-1.5 rounded-full bg-black/55 px-1.5 py-0.5 text-[10px] text-white">
+                        {time}
+                      </span>
+                    )}
                   </button>
                 )}
-                {message.text && <p className={cn(message.imageUrl && 'px-2.5 pb-1.5')}>{message.text}</p>}
+                {message.text && (
+                  <p className={cn('whitespace-pre-wrap break-words', message.imageUrl && 'px-1.5 pb-0.5')}>
+                    {message.text}
+                    <span
+                      className={cn(
+                        'ml-2 inline-block align-bottom text-[10px] opacity-70',
+                        isMe ? 'text-primary-foreground' : 'text-muted-foreground',
+                      )}
+                    >
+                      {time}
+                    </span>
+                  </p>
+                )}
               </>
             )}
           </div>
