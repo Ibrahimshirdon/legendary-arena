@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm'
-import webpush from 'web-push'
+// v4 of web-push is ESM-only with named exports — no default export.
+import { sendNotification, setVapidDetails } from 'web-push'
 import { db } from './db/client'
 import { pushSubscriptions } from './db/schema'
 
@@ -8,7 +9,7 @@ const privateKey = process.env.VAPID_PRIVATE_KEY
 const subject = process.env.VAPID_SUBJECT ?? 'mailto:admin@legendary-arena.app'
 
 if (publicKey && privateKey) {
-  webpush.setVapidDetails(subject, publicKey, privateKey)
+  setVapidDetails(subject, publicKey, privateKey)
 }
 
 export async function sendPushToUser(userId: string, payload: { title: string; body: string; url?: string }) {
@@ -20,7 +21,7 @@ export async function sendPushToUser(userId: string, payload: { title: string; b
   await Promise.all(
     subs.map(async (sub) => {
       try {
-        await webpush.sendNotification(
+        await sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           JSON.stringify(payload),
         )
