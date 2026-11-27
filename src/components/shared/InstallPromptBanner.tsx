@@ -3,15 +3,15 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useInstallPrompt } from '@/hooks/useInstallPrompt'
 
-const DISMISS_KEY = 'install-prompt-dismissed-at'
-const DISMISS_DAYS = 7
+const DISMISS_KEY = 'install-prompt-dismissed'
 const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
 
+// Dismissing is permanent, not a snooze — re-nagging every few days was
+// annoying. Anyone who changes their mind later still has the Install
+// button that's always visible in the Topbar on mobile.
 function readDismissed() {
   try {
-    const raw = localStorage.getItem(DISMISS_KEY)
-    if (!raw) return false
-    return Date.now() - Number(raw) < DISMISS_DAYS * 24 * 60 * 60 * 1000
+    return localStorage.getItem(DISMISS_KEY) === '1'
   } catch {
     return false
   }
@@ -24,7 +24,7 @@ export function InstallPromptBanner() {
   function dismiss() {
     setDismissed(true)
     try {
-      localStorage.setItem(DISMISS_KEY, String(Date.now()))
+      localStorage.setItem(DISMISS_KEY, '1')
     } catch {
       /* best-effort only — worst case it just asks again next visit */
     }

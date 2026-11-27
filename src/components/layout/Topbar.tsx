@@ -1,6 +1,7 @@
 import { ArrowLeft, Bell, LogOut, Settings, ShieldCheck, User as UserIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { InstallTopbarButton } from '@/components/shared/InstallTopbarButton'
 import { PlayerAvatar } from '@/components/shared/PlayerAvatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -51,6 +52,8 @@ export function Topbar({
 
       <div className="flex flex-wrap items-center justify-end gap-2">
         {actions}
+
+        <InstallTopbarButton />
 
         <Button variant="ghost" size="icon" className="relative" onClick={() => navigate('/notifications')}>
           <Bell className="size-5" />
