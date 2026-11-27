@@ -29,7 +29,9 @@ export async function notify(userId: string, input: NotifyInput) {
   })
   // Fire-and-forget: a push failure (expired subscription, no device
   // registered, etc.) should never break the action that triggered it.
-  void sendPushToUser(userId, { title: input.title, body: input.message, url: input.link }).catch(() => {})
+  void sendPushToUser(userId, { title: input.title, body: input.message, url: input.link }).catch((err) =>
+    console.error('[push] sendPushToUser threw:', err),
+  )
 }
 
 export async function notifyMany(userIds: string[], input: NotifyInput) {
@@ -63,15 +65,21 @@ notificationsRouter.patch('/mark-all-read', async (req, res) => {
 })
 
 notificationsRouter.post('/push/subscribe', async (req, res) => {
-  const { endpoint, keys } = req.body as { endpoint: string; keys: { p256dh: string; auth: string } }
-  await db
-    .insert(pushSubscriptions)
-    .values({ id: crypto.randomUUID(), userId: req.uid!, endpoint, p256dh: keys.p256dh, auth: keys.auth, createdAt: Date.now() })
-    .onConflictDoUpdate({
-      target: pushSubscriptions.endpoint,
-      set: { userId: req.uid!, p256dh: keys.p256dh, auth: keys.auth },
-    })
-  res.status(204).end()
+  try {
+    const { endpoint, keys } = req.body as { endpoint: string; keys: { p256dh: string; auth: string } }
+    await db
+      .insert(pushSubscriptions)
+      .values({ id: crypto.randomUUID(), userId: req.uid!, endpoint, p256dh: keys.p256dh, auth: keys.auth, createdAt: Date.now() })
+      .onConflictDoUpdate({
+        target: pushSubscriptions.endpoint,
+        set: { userId: req.uid!, p256dh: keys.p256dh, auth: keys.auth },
+      })
+    console.log(`[push] Subscribed user ${req.uid} (${endpoint.slice(0, 60)}...)`)
+    res.status(204).end()
+  } catch (err) {
+    console.error('[push] /push/subscribe failed:', err)
+    res.status(500).json({ error: 'Could not save push subscription' })
+  }
 })
 
 notificationsRouter.post('/push/unsubscribe', async (req, res) => {
