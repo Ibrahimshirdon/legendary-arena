@@ -9,6 +9,7 @@ import { AuthShell } from '@/components/layout/AuthShell'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/ui/password-input'
 import { useAuth } from '@/context/AuthContext'
 
 const schema = z.object({
@@ -56,7 +57,7 @@ export default function Login() {
               Forgot password?
             </Link>
           </div>
-          <Input id="password" type="password" placeholder="••••••••" {...register('password')} />
+          <PasswordInput id="password" placeholder="••••••••" {...register('password')} />
           {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
         </div>
         <Button type="submit" className="w-full" disabled={submitting}>

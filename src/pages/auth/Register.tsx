@@ -10,6 +10,7 @@ import { AvatarPicker } from '@/components/shared/AvatarPicker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/ui/password-input'
 import { useAuth } from '@/context/AuthContext'
 import { dicebearAvatar, uploadAvatar } from '@/lib/storage'
 
@@ -109,12 +110,12 @@ export default function Register() {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" {...register('password')} />
+            <PasswordInput id="password" {...register('password')} />
             {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="confirmPassword">Confirm</Label>
-            <Input id="confirmPassword" type="password" {...register('confirmPassword')} />
+            <PasswordInput id="confirmPassword" {...register('confirmPassword')} />
             {errors.confirmPassword && (
               <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>
             )}

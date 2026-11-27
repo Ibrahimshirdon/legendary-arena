@@ -11,6 +11,7 @@ import { PushNotificationsCard } from '@/components/shared/PushNotificationsCard
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/context/AuthContext'
 import { api, ApiError } from '@/lib/api'
@@ -135,9 +136,8 @@ export default function Settings() {
           <h3 className="font-bold">Security</h3>
           <div className="space-y-1.5">
             <Label htmlFor="newPassword">New password</Label>
-            <Input
+            <PasswordInput
               id="newPassword"
-              type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="••••••••"
