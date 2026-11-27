@@ -1,11 +1,11 @@
-import { Megaphone, Smile, Trash2 } from 'lucide-react'
+import { Info, Megaphone, Smile, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { PlayerAvatar } from '@/components/shared/PlayerAvatar'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useAuth } from '@/context/AuthContext'
 import { deleteMessage, toggleReaction } from '@/lib/chat'
 import { cn, formatTime } from '@/lib/utils'
-import { usePlayer } from '@/store/playersStore'
+import { usePlayer, usePlayersStore } from '@/store/playersStore'
 import type { ChatMessage } from '@/types'
 
 const QUICK_EMOJIS = ['🔥', '😂', '⚽', '👏', '😮']
@@ -21,10 +21,14 @@ export function MessageBubble({
 }) {
   const { profile } = useAuth()
   const sender = usePlayer(message.senderId)
+  const players = usePlayersStore((s) => s.players)
   const [showPicker, setShowPicker] = useState(false)
   const [viewerOpen, setViewerOpen] = useState(false)
+  const [reactorsOpen, setReactorsOpen] = useState(false)
   const isMe = profile?.uid === message.senderId
   const canDelete = isMe || isAdmin
+  const reactionEntries = Object.entries(message.reactions).filter(([, uids]) => uids.length > 0)
+  const namesFor = (uids: string[]) => uids.map((uid) => players[uid]?.username ?? 'Member').join(', ')
 
   if (!profile) return null
 
@@ -116,25 +120,32 @@ export function MessageBubble({
           )}
         </div>
 
-        {Object.entries(message.reactions).some(([, uids]) => uids.length > 0) && (
-          <div className={cn('flex flex-wrap gap-1', isMe && 'justify-end')}>
-            {Object.entries(message.reactions)
-              .filter(([, uids]) => uids.length > 0)
-              .map(([emoji, uids]) => {
-                const active = uids.includes(profile.uid)
-                return (
-                  <button
-                    key={emoji}
-                    onClick={() => void toggleReaction(roomId, message.id, emoji, profile.uid, active)}
-                    className={cn(
-                      'flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs',
-                      active ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border text-muted-foreground',
-                    )}
-                  >
-                    {emoji} {uids.length}
-                  </button>
-                )
-              })}
+        {reactionEntries.length > 0 && (
+          <div className={cn('flex flex-wrap items-center gap-1', isMe && 'justify-end')}>
+            {reactionEntries.map(([emoji, uids]) => {
+              const active = uids.includes(profile.uid)
+              return (
+                <button
+                  key={emoji}
+                  onClick={() => void toggleReaction(roomId, message.id, emoji, profile.uid, active)}
+                  title={namesFor(uids)}
+                  className={cn(
+                    'flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs',
+                    active ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border text-muted-foreground',
+                  )}
+                >
+                  {emoji} {uids.length}
+                </button>
+              )
+            })}
+            <button
+              type="button"
+              onClick={() => setReactorsOpen(true)}
+              aria-label="See who reacted"
+              className="flex size-5 items-center justify-center rounded-full text-muted-foreground hover:text-primary"
+            >
+              <Info className="size-3.5" />
+            </button>
           </div>
         )}
       </div>
@@ -144,6 +155,24 @@ export function MessageBubble({
           <DialogContent className="max-w-2xl overflow-visible border-none bg-transparent p-0 shadow-none">
             <DialogTitle className="sr-only">Shared image</DialogTitle>
             <img src={message.imageUrl} alt="Shared" className="mx-auto max-h-[80vh] w-auto max-w-full rounded-2xl" />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {reactionEntries.length > 0 && (
+        <Dialog open={reactorsOpen} onOpenChange={setReactorsOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reactions</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              {reactionEntries.map(([emoji, uids]) => (
+                <div key={emoji} className="flex items-start gap-3">
+                  <span className="text-xl leading-none">{emoji}</span>
+                  <p className="text-sm text-muted-foreground">{namesFor(uids)}</p>
+                </div>
+              ))}
+            </div>
           </DialogContent>
         </Dialog>
       )}
