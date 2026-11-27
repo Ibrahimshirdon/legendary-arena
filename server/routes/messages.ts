@@ -2,8 +2,9 @@ import crypto from 'node:crypto'
 import { and, asc, eq } from 'drizzle-orm'
 import { Router } from 'express'
 import { db } from '../db/client'
-import { messageReactions, messages } from '../db/schema'
+import { messageReactions, messages, roomMembers } from '../db/schema'
 import { requireApproved } from '../middleware/roles'
+import { notify } from './notifications'
 
 export const messagesRouter = Router({ mergeParams: true })
 
@@ -55,6 +56,28 @@ messagesRouter.post('/', requireApproved, async (req, res) => {
     deleted: false,
     createdAt: Date.now(),
   })
+
+  const members = await db.select().from(roomMembers).where(eq(roomMembers.roomId, roomId))
+  const preview = isAnnouncement
+    ? `📢 ${text}`
+    : imageUrl && !text.trim()
+      ? '📷 Photo'
+      : text.length > 120
+        ? `${text.slice(0, 117)}...`
+        : text
+  await Promise.all(
+    members
+      .filter((m) => m.userId !== req.uid)
+      .map((m) =>
+        notify(m.userId, {
+          type: 'chat_message',
+          title: req.profile!.username,
+          message: preview,
+          link: `/rooms/${roomId}?tab=chat`,
+        }),
+      ),
+  )
+
   res.status(201).json((await serializeMessages(roomId)).find((m) => m.id === id))
 })
 

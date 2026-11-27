@@ -207,3 +207,13 @@ export const notifications = pgTable('notifications', {
   read: boolean('read').notNull().default(false),
   createdAt: bigint('created_at', { mode: 'number' }).notNull(),
 })
+
+// One row per browser/device a user has enabled notifications on.
+export const pushSubscriptions = pgTable('push_subscriptions', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  endpoint: text('endpoint').notNull().unique(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  createdAt: bigint('created_at', { mode: 'number' }).notNull(),
+})
