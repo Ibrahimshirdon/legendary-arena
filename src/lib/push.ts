@@ -2,6 +2,16 @@ import { api } from '@/lib/api'
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined
 
+export const PUSH_DISABLED_KEY = 'push-disabled-by-user'
+
+export function isPushDisabledByUser() {
+  try {
+    return localStorage.getItem(PUSH_DISABLED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
 function urlBase64ToUint8Array(base64: string) {
   const padding = '='.repeat((4 - (base64.length % 4)) % 4)
   const base64Safe = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/')

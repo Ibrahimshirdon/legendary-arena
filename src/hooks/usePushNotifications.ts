@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react'
-import { pushSupported, subscribeToPush } from '@/lib/push'
+import { PUSH_DISABLED_KEY, isPushDisabledByUser, pushSupported, subscribeToPush, unsubscribeFromPush } from '@/lib/push'
 
 export function usePushNotifications() {
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(
     pushSupported() ? Notification.permission : 'unsupported',
   )
+  // Separate from the browser's permission: lets someone who already granted
+  // permission still turn delivery off in-app without touching browser settings.
+  const [disabledByUser, setDisabledByUser] = useState(isPushDisabledByUser)
 
-  // Already granted in a past session — keep the subscription fresh without
+  // Already granted and not turned off — keep the subscription fresh without
   // making the user click anything again.
   useEffect(() => {
-    if (permission === 'granted') void subscribeToPush()
-  }, [permission])
+    if (permission === 'granted' && !disabledByUser) void subscribeToPush()
+  }, [permission, disabledByUser])
 
   async function enable() {
     if (!pushSupported()) throw new Error('Push notifications are not supported in this browser.')
@@ -22,15 +25,31 @@ export function usePushNotifications() {
     const result = await Promise.race([Notification.requestPermission(), timeout])
     setPermission(result === 'default' ? Notification.permission : result)
     if (result === 'default') {
-      // Chrome sometimes suppresses the prompt entirely (its "quiet" anti-spam
-      // UI) instead of asking — nothing visibly happens when that occurs.
       throw new Error(
         'Your browser didn\'t show a permission prompt. Tap the lock/info icon next to the address bar, open "Permissions" or "Site settings", and set Notifications to Allow — then reopen this page.',
       )
     }
-    if (result === 'granted') await subscribeToPush()
+    if (result === 'granted') {
+      try {
+        localStorage.removeItem(PUSH_DISABLED_KEY)
+      } catch {
+        /* ignore */
+      }
+      setDisabledByUser(false)
+      await subscribeToPush()
+    }
     return result === 'granted'
   }
 
-  return { permission, enable }
+  async function disable() {
+    await unsubscribeFromPush()
+    try {
+      localStorage.setItem(PUSH_DISABLED_KEY, '1')
+    } catch {
+      /* ignore */
+    }
+    setDisabledByUser(true)
+  }
+
+  return { permission, enabled: permission === 'granted' && !disabledByUser, enable, disable }
 }
