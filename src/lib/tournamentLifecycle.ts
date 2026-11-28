@@ -13,6 +13,11 @@ export async function cancelRegistration(tournament: Tournament, _uid: string) {
   refetchAppStores()
 }
 
+export async function removeRegistration(tournament: Tournament, userId: string) {
+  await api.post(`/tournaments/${tournament.id}/remove-registration`, { userId })
+  refetchAppStores()
+}
+
 export async function openTournamentRegistration(tournament: Tournament) {
   await api.post(`/tournaments/${tournament.id}/open-registration`)
   refetchAppStores()

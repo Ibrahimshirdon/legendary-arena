@@ -104,6 +104,17 @@ tournamentsRouter.post('/:id/cancel-registration', requireApproved, async (req, 
   res.status(204).end()
 })
 
+// Lets an admin pull someone off the registration list — e.g. they signed
+// up by mistake or someone registered the wrong player.
+tournamentsRouter.post('/:id/remove-registration', requireAdmin, async (req, res) => {
+  const { userId } = req.body as { userId: string }
+  const tournamentId = req.params.id as string
+  await db
+    .delete(tournamentRegistrations)
+    .where(and(eq(tournamentRegistrations.tournamentId, tournamentId), eq(tournamentRegistrations.userId, userId)))
+  res.status(204).end()
+})
+
 tournamentsRouter.post('/:id/open-registration', requireAdmin, async (req, res) => {
   const tournamentId = req.params.id as string
   await db.update(tournaments).set({ status: 'registration_open' }).where(eq(tournaments.id, tournamentId))

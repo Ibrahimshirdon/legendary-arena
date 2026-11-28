@@ -1,8 +1,9 @@
-import { Calendar, ListChecks, Swords, Trophy, Users } from 'lucide-react'
+import { Calendar, ListChecks, Swords, Trophy, Users, X } from 'lucide-react'
 import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Topbar } from '@/components/layout/Topbar'
+import { ConfirmationDialog } from '@/components/shared/ConfirmationDialog'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { LeagueTable } from '@/components/shared/LeagueTable'
 import { MatchCard } from '@/components/shared/MatchCard'
@@ -15,11 +16,65 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/context/AuthContext'
 import { BYE } from '@/lib/fixtures'
-import { cancelRegistration, getStandingsForTournament, groupStageMatches, knockoutStageMatches, registerForTournament } from '@/lib/tournamentLifecycle'
+import {
+  cancelRegistration,
+  getStandingsForTournament,
+  groupStageMatches,
+  knockoutStageMatches,
+  registerForTournament,
+  removeRegistration,
+} from '@/lib/tournamentLifecycle'
 import { formatDate } from '@/lib/utils'
 import { useMatchesStore, useTournamentsStore } from '@/store/appStores'
 import { usePlayersList } from '@/store/playersStore'
-import type { Match } from '@/types'
+import type { Match, Tournament, UserProfile } from '@/types'
+
+function RegisteredPlayerCard({
+  player,
+  tournament,
+  canRemove,
+}: {
+  player: UserProfile
+  tournament: Tournament
+  canRemove: boolean
+}) {
+  const [confirmOpen, setConfirmOpen] = useState(false)
+
+  async function handleRemove() {
+    try {
+      await removeRegistration(tournament, player.uid)
+      toast.success(`Removed ${player.username} from registration.`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not remove this registration.')
+    }
+  }
+
+  return (
+    <div className="relative">
+      <PlayerCard player={player} />
+      {canRemove && (
+        <button
+          type="button"
+          onClick={() => setConfirmOpen(true)}
+          title="Remove from registration"
+          aria-label="Remove from registration"
+          className="absolute right-2.5 top-2.5 flex size-6 items-center justify-center rounded-full bg-card/90 text-muted-foreground shadow hover:text-destructive"
+        >
+          <X className="size-3.5" />
+        </button>
+      )}
+      <ConfirmationDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Remove ${player.username}?`}
+        description="They'll be taken off the registration list — useful if they signed up by mistake or the wrong account registered. They can register again if needed."
+        confirmLabel="Remove"
+        variant="destructive"
+        onConfirm={handleRemove}
+      />
+    </div>
+  )
+}
 
 const formatLabel = {
   knockout: 'Knockout',
@@ -156,7 +211,7 @@ export default function TournamentDetails() {
             {(tournament.status === 'upcoming' || tournament.status === 'registration_open') && registered.length > 0 ? (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {registered.map((p) => (
-                  <PlayerCard key={p.uid} player={p} />
+                  <RegisteredPlayerCard key={p.uid} player={p} tournament={tournament} canRemove={profile.role === 'admin'} />
                 ))}
               </div>
             ) : participants.length > 0 ? (
